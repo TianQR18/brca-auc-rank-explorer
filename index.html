@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BRCA Full-Rank AUC Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #667085;
+      --border: #e5e7eb;
+      --accent: #be185d;
+      --accent-2: #0f766e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+    }
+    .container { max-width: 1220px; margin: 28px auto; padding: 0 16px 40px; }
+    .card {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.15; letter-spacing: 0; }
+    h2 { margin: 24px 0 8px; font-size: 19px; letter-spacing: 0; }
+    h3 { margin: 0 0 8px; font-size: 15px; letter-spacing: 0; }
+    .muted, .tip { color: var(--muted); }
+    .tip { font-size: 13px; line-height: 1.55; }
+    .method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
+    .method-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: #fff; }
+    .method-card strong { color: #111827; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
+    .field-wrap { flex: 1 1 260px; min-width: 230px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    input[type="text"], select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 15px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(190, 24, 93, 0.14);
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #db2777);
+      color: #fff;
+      padding: 10px 15px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button.secondary { background: linear-gradient(135deg, var(--accent-2), #14b8a6); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 14px; }
+    .stat { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #fcfdff; }
+    .stat .k { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+    .stat .v { font-size: 18px; font-weight: 700; color: #111827; word-break: break-word; }
+    .chip {
+      display: inline-block;
+      border: 1px solid #fbcfe8;
+      background: #fdf2f8;
+      color: #9d174d;
+      border-radius: 999px;
+      padding: 3px 10px;
+      margin: 0 6px 6px 0;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .hint { margin-top: 6px; min-height: 24px; }
+    .plot { width: 100%; height: 470px; border: 1px solid var(--border); border-radius: 10px; background: #fff; margin-top: 14px; }
+    .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+    .leaderboard-wrap { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+    .leaderboard-head { padding: 10px 12px; border-bottom: 1px solid var(--border); background: #f8fafc; font-size: 13px; color: var(--muted); }
+    .table-scroll { max-height: 440px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid #f1f5f9; padding: 8px 10px; text-align: left; white-space: nowrap; }
+    thead th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
+    tbody tr:hover { background: #fff7fb; cursor: pointer; }
+    .ok { color: #047857; }
+    .err { color: #b91c1c; }
+    @media (max-width: 820px) {
+      .split { grid-template-columns: 1fr; }
+      .plot { height: 390px; }
+      h1 { font-size: 23px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>BRCA Full-Rank AUC Explorer</h1>
+      <div class="muted">This page audits candidate-gene ranking stability across 100 random train/test reruns. Every rerun assigns a full rank from 1 to 2000 to every gene; zero-gain genes are assigned rank 2000.</div>
+
+      <div class="method-grid">
+        <div class="method-card">
+          <h3>What this does</h3>
+          <div class="tip">Each task uses a fixed Top2000 gene universe selected from the most interpretable small-batch panel, then reruns XGBoost under 100 random stratified splits.</div>
+        </div>
+        <div class="method-card">
+          <h3>AUC ranking</h3>
+          <div class="tip">Per rerun score is <strong>2000 * (2000 - rank) / 1999</strong>. A gene always ranked 2000 has AUC score 0. The leaderboard is sorted by mean AUC score.</div>
+        </div>
+        <div class="method-card">
+          <h3>Rank quartiles</h3>
+          <div class="tip"><strong>Q1</strong> is ranks 1-500, <strong>Q2</strong> 501-1000, <strong>Q3</strong> 1001-1500, and <strong>Q4</strong> 1501-2000. Zero-gain genes contribute to Q4.</div>
+        </div>
+        <div class="method-card">
+          <h3>Rerank profile</h3>
+          <div class="tip"><strong>Full-rank AUC, depth 4, colsample_bytree=0.3, colsample_bynode=0.4</strong><br />binary: n_estimators=150, max_depth=4, learning_rate=0.03, subsample=0.8, colsample_bytree=0.3, colsample_bynode=0.4; multiclass: n_estimators=200, max_depth=4, learning_rate=0.03, subsample=0.8, colsample_bytree=0.3, colsample_bynode=0.4</div>
+        </div>
+        <div class="method-card">
+          <h3>Boundary</h3>
+          <div class="tip">This is a stability audit of candidate-gene ranking. It is not causal mechanism evidence and is not a clinical diagnostic result.</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field-wrap">
+          <label for="taskSelect">Task</label>
+          <select id="taskSelect"></select>
+        </div>
+        <div class="field-wrap">
+          <label for="geneInputA">Gene A</label>
+          <input id="geneInputA" type="text" list="geneList" placeholder="e.g. ESR1" />
+          <div id="hintA" class="hint"></div>
+        </div>
+        <div class="field-wrap">
+          <label for="geneInputB">Gene B optional</label>
+          <input id="geneInputB" type="text" list="geneList" placeholder="e.g. ERBB2" />
+          <div id="hintB" class="hint"></div>
+        </div>
+      </div>
+      <datalist id="geneList"></datalist>
+      <div class="row">
+        <button id="searchBtn" disabled>Single-Gene Query</button>
+        <button id="compareBtn" class="secondary" disabled>Two-Gene Comparison</button>
+        <span id="status" class="muted">Loading task manifest...</span>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="k">Selected batch</div><div id="sBatch" class="v">-</div></div>
+        <div class="stat"><div class="k">Gene A</div><div id="sGeneA" class="v">-</div></div>
+        <div class="stat"><div class="k">A AUC score</div><div id="sScoreA" class="v">-</div></div>
+        <div class="stat"><div class="k">A Q rates</div><div id="sRatesA" class="v">-</div></div>
+        <div class="stat"><div class="k">A median rank</div><div id="sMedianA" class="v">-</div></div>
+        <div class="stat"><div class="k">Gene B</div><div id="sGeneB" class="v">-</div></div>
+        <div class="stat"><div class="k">B AUC score</div><div id="sScoreB" class="v">-</div></div>
+        <div class="stat"><div class="k">Delta AUC B-A</div><div id="sDelta" class="v">-</div></div>
+      </div>
+
+      <h2>Rank Distribution</h2>
+      <div id="rankPlot" class="plot"></div>
+      <div class="tip">Each dot is one random rerun. Lower rank is stronger. Zero-gain genes are visible at rank 2000.</div>
+
+      <div class="split">
+        <div>
+          <h2>Q1-Q4 Distribution</h2>
+          <div id="quartilePlot" class="plot"></div>
+        </div>
+        <div>
+          <h2>Rank CDF</h2>
+          <div id="cdfPlot" class="plot"></div>
+        </div>
+      </div>
+
+      <h2>Per-Test Table</h2>
+      <div class="row">
+        <div class="field-wrap" style="max-width: 260px;">
+          <label for="quartileFilter">Q filter</label>
+          <select id="quartileFilter">
+            <option value="all">All rows</option>
+            <option value="Q1">Q1 only</option>
+            <option value="Q2">Q2 only</option>
+            <option value="Q3">Q3 only</option>
+            <option value="Q4">Q4 only</option>
+          </select>
+        </div>
+      </div>
+      <div class="leaderboard-wrap">
+        <div id="detailHead" class="leaderboard-head">Query a gene to inspect each test row.</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Gene</th><th>Test</th><th>Rank</th><th>Q</th><th>Rank score</th><th>Gain</th><th>Split seed</th><th>Model seed</th></tr></thead>
+            <tbody id="detailBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <h2>Top 100 Leaderboard</h2>
+      <div class="muted">Sorted by AUC score, Q1 rate, median rank, mean rank, and gene name.</div>
+      <div class="leaderboard-wrap">
+        <div id="lbHead" class="leaderboard-head">Waiting for task data...</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>Gene</th><th>Prior</th><th>AUC score</th><th>Q1 rate</th><th>Q2 rate</th><th>Q3 rate</th><th>Q4 rate</th><th>Median rank</th><th>Mean rank</th></tr></thead>
+            <tbody id="lbBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const Q_COLORS = { Q1: "#be185d", Q2: "#0f766e", Q3: "#d97706", Q4: "#64748b" };
+    let manifest = [];
+    let currentTask = null;
+    let matrixRows = [];
+    let summaryRows = [];
+    let longRows = [];
+    let summaryMap = new Map();
+    let matrixMap = new Map();
+
+    const taskSelect = document.getElementById("taskSelect");
+    const geneInputA = document.getElementById("geneInputA");
+    const geneInputB = document.getElementById("geneInputB");
+    const searchBtn = document.getElementById("searchBtn");
+    const compareBtn = document.getElementById("compareBtn");
+    const statusEl = document.getElementById("status");
+    const geneList = document.getElementById("geneList");
+    const hintA = document.getElementById("hintA");
+    const hintB = document.getElementById("hintB");
+    const detailHead = document.getElementById("detailHead");
+    const detailBody = document.getElementById("detailBody");
+    const quartileFilter = document.getElementById("quartileFilter");
+    const lbHead = document.getElementById("lbHead");
+    const lbBody = document.getElementById("lbBody");
+
+    function setStatus(msg, ok = true) { statusEl.textContent = msg; statusEl.className = ok ? "ok" : "err"; }
+    function upper(v) { return String(v || "").trim().toUpperCase(); }
+    async function loadCsv(path) {
+      const resp = await fetch(path, { cache: "no-store" });
+      if (!resp.ok) throw new Error(path + " HTTP " + resp.status);
+      const parsed = Papa.parse(await resp.text(), { header: true, skipEmptyLines: true });
+      if (parsed.errors.length) throw new Error(parsed.errors[0].message);
+      return parsed.data;
+    }
+    function fmt(value, digits = 3) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n.toFixed(digits) : "-";
+    }
+    function pct(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? `${(100 * n).toFixed(0)}%` : "-";
+    }
+    function rankCols() {
+      return matrixRows.length ? Object.keys(matrixRows[0]).filter(k => k.startsWith("test_")) : [];
+    }
+    function resolveGene(q) { return summaryMap.get(upper(q)) || null; }
+    function matrixFor(gene) { return matrixMap.get(upper(gene)) || null; }
+    function qCounts(row) {
+      return {
+        Q1: Number(row.q1_count || 0),
+        Q2: Number(row.q2_count || 0),
+        Q3: Number(row.q3_count || 0),
+        Q4: Number(row.q4_count || 0),
+      };
+    }
+    function qRateText(row) {
+      return `Q1 ${pct(row.q1_rate)} / Q2 ${pct(row.q2_rate)} / Q3 ${pct(row.q3_rate)} / Q4 ${pct(row.q4_rate)}`;
+    }
+    function renderHints(input, box) {
+      box.innerHTML = "";
+      const q = upper(input.value);
+      if (!q) return;
+      const exact = resolveGene(q);
+      const candidates = exact ? [exact] : summaryRows.filter(r => upper(r.gene).includes(q)).slice(0, 8);
+      for (const r of candidates) {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = `${r.gene} | AUC=${fmt(r.auc_score)} | median=${fmt(r.median_rank, 1)}`;
+        chip.onclick = () => { input.value = r.gene; renderHints(input, box); };
+        box.appendChild(chip);
+      }
+    }
+    function updateStats(a, b = null) {
+      const task = manifest.find(x => x.task === currentTask);
+      document.getElementById("sBatch").textContent = task ? task.selected_batch_size : "-";
+      document.getElementById("sGeneA").textContent = a ? a.gene : "-";
+      document.getElementById("sScoreA").textContent = a ? fmt(a.auc_score) : "-";
+      document.getElementById("sRatesA").textContent = a ? qRateText(a) : "-";
+      document.getElementById("sMedianA").textContent = a ? fmt(a.median_rank, 1) : "-";
+      document.getElementById("sGeneB").textContent = b ? b.gene : "-";
+      document.getElementById("sScoreB").textContent = b ? fmt(b.auc_score) : "-";
+      document.getElementById("sDelta").textContent = a && b ? fmt(Number(b.auc_score) - Number(a.auc_score)) : "-";
+    }
+    function rankTrace(summaryRow, color) {
+      const mat = matrixFor(summaryRow.gene);
+      const x = [], y = [];
+      for (const col of rankCols()) {
+        const n = Number(mat[col]);
+        if (Number.isFinite(n)) { x.push(col); y.push(n); }
+      }
+      return { type: "scatter", mode: "markers", name: summaryRow.gene, x, y, marker: { color, size: 8, opacity: 0.82 }, hovertemplate: "%{x}<br>rank %{y}<extra>%{fullData.name}</extra>" };
+    }
+    function renderRankPlot(a, b = null) {
+      const traces = [rankTrace(a, "#be185d")];
+      if (b) traces.push(rankTrace(b, "#0f766e"));
+      Plotly.newPlot("rankPlot", traces, {
+        margin: { l: 58, r: 18, t: 18, b: 92 },
+        yaxis: { title: "Rank", autorange: "reversed", range: [2050, 0] },
+        xaxis: { tickangle: -45, automargin: true, showticklabels: false },
+        legend: { orientation: "h", y: 1.12 },
+        paper_bgcolor: "white", plot_bgcolor: "white"
+      }, { responsive: true, displayModeBar: false });
+    }
+    function renderQuartilePlot(a, b = null) {
+      const rows = b ? [a, b] : [a];
+      const traces = ["Q1", "Q2", "Q3", "Q4"].map(q => ({
+        type: "bar", name: q, x: rows.map(r => r.gene), y: rows.map(r => qCounts(r)[q] / 100), marker: { color: Q_COLORS[q] }
+      }));
+      Plotly.newPlot("quartilePlot", traces, {
+        barmode: "stack",
+        margin: { l: 48, r: 18, t: 18, b: 42 },
+        yaxis: { title: "Fraction of 100 reruns", range: [0, 1], tickformat: ".0%" },
+        legend: { orientation: "h", y: 1.16 },
+        paper_bgcolor: "white", plot_bgcolor: "white"
+      }, { responsive: true, displayModeBar: false });
+    }
+    function cdfTrace(summaryRow, color) {
+      const mat = matrixFor(summaryRow.gene);
+      const ranks = rankCols().map(c => Number(mat[c])).filter(Number.isFinite).sort((a, b) => a - b);
+      const x = [], y = [];
+      for (let t = 100; t <= 2000; t += 100) {
+        x.push(t);
+        y.push(ranks.filter(r => r <= t).length / 100);
+      }
+      return { type: "scatter", mode: "lines+markers", name: summaryRow.gene, x, y, line: { color, width: 2 }, hovertemplate: "rank <= %{x}<br>CDF %{y:.2f}<extra>%{fullData.name}</extra>" };
+    }
+    function renderCdfPlot(a, b = null) {
+      const traces = [cdfTrace(a, "#be185d")];
+      if (b) traces.push(cdfTrace(b, "#0f766e"));
+      Plotly.newPlot("cdfPlot", traces, {
+        margin: { l: 48, r: 18, t: 18, b: 42 },
+        yaxis: { title: "Fraction of 100 reruns", range: [0, 1] },
+        xaxis: { title: "Rank threshold" },
+        legend: { orientation: "h", y: 1.16 },
+        paper_bgcolor: "white", plot_bgcolor: "white"
+      }, { responsive: true, displayModeBar: false });
+    }
+    function renderDetail(gene) {
+      const filter = quartileFilter.value;
+      let rows = longRows.filter(r => upper(r.gene) === upper(gene));
+      if (filter !== "all") rows = rows.filter(r => r.q_label === filter);
+      detailHead.textContent = `${gene} per-test rows | shown=${rows.length} | filter=${filter}`;
+      detailBody.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      rows.slice(0, 500).forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.gene}</td><td>${r.test_id}</td><td>${r.rank}</td><td>${r.q_label}</td><td>${fmt(r.rank_score, 3)}</td><td>${fmt(r.gain_importance, 5)}</td><td>${r.split_seed}</td><td>${r.model_seed}</td>`;
+        frag.appendChild(tr);
+      });
+      detailBody.appendChild(frag);
+    }
+    function renderLeaderboard() {
+      lbHead.textContent = `${currentTask} top 100 genes | genes in task=${summaryRows.length}`;
+      lbBody.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      summaryRows.slice(0, 100).forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.leaderboard_rank}</td><td>${r.gene}</td><td>${r.prior_gene_set || "-"}</td><td>${fmt(r.auc_score)}</td><td>${pct(r.q1_rate)}</td><td>${pct(r.q2_rate)}</td><td>${pct(r.q3_rate)}</td><td>${pct(r.q4_rate)}</td><td>${fmt(r.median_rank, 1)}</td><td>${fmt(r.mean_rank, 1)}</td>`;
+        tr.onclick = () => { geneInputA.value = r.gene; querySingle(); };
+        frag.appendChild(tr);
+      });
+      lbBody.appendChild(frag);
+    }
+    function querySingle() {
+      const a = resolveGene(geneInputA.value);
+      if (!a) return setStatus("Gene not found in current task: " + geneInputA.value, false);
+      geneInputA.value = a.gene;
+      updateStats(a);
+      renderRankPlot(a);
+      renderQuartilePlot(a);
+      renderCdfPlot(a);
+      renderDetail(a.gene);
+      setStatus(`Loaded ${currentTask}: ${a.gene}`, true);
+    }
+    function queryCompare() {
+      const a = resolveGene(geneInputA.value);
+      const b = resolveGene(geneInputB.value);
+      if (!a || !b) return setStatus("Compare mode needs two valid genes in the current task.", false);
+      geneInputA.value = a.gene; geneInputB.value = b.gene;
+      updateStats(a, b);
+      renderRankPlot(a, b);
+      renderQuartilePlot(a, b);
+      renderCdfPlot(a, b);
+      renderDetail(a.gene);
+      setStatus(`Comparing ${a.gene} and ${b.gene}`, true);
+    }
+    async function loadTask(task) {
+      currentTask = task;
+      const meta = manifest.find(r => r.task === task);
+      setStatus("Loading " + task + "...", true);
+      matrixRows = await loadCsv(meta.matrix_csv);
+      summaryRows = await loadCsv(meta.summary_csv);
+      longRows = await loadCsv(meta.long_csv);
+      summaryMap = new Map(summaryRows.map(r => [upper(r.gene), r]));
+      matrixMap = new Map(matrixRows.map(r => [upper(r.gene), r]));
+      geneList.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      summaryRows.map(r => r.gene).sort().forEach(g => { const opt = document.createElement("option"); opt.value = g; frag.appendChild(opt); });
+      geneList.appendChild(frag);
+      renderLeaderboard();
+      searchBtn.disabled = false; compareBtn.disabled = false;
+      const preferred = ["PGR", "ESR1", "ERBB2", "GATA3", "MIA", "SFRP1"].find(g => summaryMap.has(g));
+      geneInputA.value = preferred || summaryRows[0].gene;
+      querySingle();
+    }
+    async function init() {
+      try {
+        manifest = await loadCsv("task_manifest.csv");
+        taskSelect.innerHTML = "";
+        manifest.forEach(r => {
+          const opt = document.createElement("option");
+          opt.value = r.task;
+          opt.textContent = `${r.task} | batch ${r.selected_batch_size}`;
+          taskSelect.appendChild(opt);
+        });
+        await loadTask(manifest[0].task);
+      } catch (e) {
+        setStatus("Load failed: " + e.message, false);
+      }
+    }
+    taskSelect.addEventListener("change", () => loadTask(taskSelect.value));
+    searchBtn.onclick = querySingle;
+    compareBtn.onclick = queryCompare;
+    geneInputA.addEventListener("input", () => renderHints(geneInputA, hintA));
+    geneInputB.addEventListener("input", () => renderHints(geneInputB, hintB));
+    geneInputA.addEventListener("keydown", ev => { if (ev.key === "Enter") querySingle(); });
+    geneInputB.addEventListener("keydown", ev => { if (ev.key === "Enter") queryCompare(); });
+    quartileFilter.addEventListener("change", () => { const a = resolveGene(geneInputA.value); if (a) renderDetail(a.gene); });
+    init();
+  </script>
+</body>
+</html>
