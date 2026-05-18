@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BRCA Full-Rank AUC Explorer</title>
+  <title>BRCA Top2000 Gene Explorer</title>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     :root {
-      --bg: #f7f8fb;
+      --bg: #f6f8fb;
       --card: #ffffff;
-      --text: #1f2937;
-      --muted: #667085;
-      --border: #e5e7eb;
-      --accent: #be185d;
-      --accent-2: #0f766e;
+      --text: #172033;
+      --muted: #5f6f89;
+      --border: #dfe6ef;
+      --accent: #c2185b;
+      --accent-2: #00897b;
+      --ink: #0f172a;
     }
     * { box-sizing: border-box; }
     body {
@@ -24,22 +25,72 @@
       background: var(--bg);
       min-height: 100vh;
     }
-    .container { max-width: 1220px; margin: 28px auto; padding: 0 16px 40px; }
-    .card {
+    .container { max-width: 1240px; margin: 22px auto; padding: 0 16px 40px; }
+    .shell {
       background: rgba(255, 255, 255, 0.98);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 18px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
     }
-    h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.15; letter-spacing: 0; }
-    h2 { margin: 24px 0 8px; font-size: 19px; letter-spacing: 0; }
+    .hero {
+      border: 1px solid #d9e7f7;
+      border-radius: 10px;
+      padding: 20px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+    }
+    .eyebrow { margin: 0 0 6px; color: var(--accent); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.12; letter-spacing: 0; }
+    h2 { margin: 24px 0 8px; font-size: 20px; letter-spacing: 0; }
     h3 { margin: 0 0 8px; font-size: 15px; letter-spacing: 0; }
+    .hero-copy { max-width: 920px; margin: 10px 0 0; color: #334155; line-height: 1.58; font-size: 15px; }
+    .metric-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+    .metric { border: 1px solid var(--border); border-radius: 8px; padding: 11px 12px; background: #fff; }
+    .metric .k { color: var(--muted); font-size: 12px; }
+    .metric .v { margin-top: 2px; font-size: 20px; font-weight: 800; color: var(--ink); }
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .pipe-step {
+      position: relative;
+      border: 1px solid #d8e4f2;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      min-height: 74px;
+    }
+    .pipe-step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #7c8da5;
+      font-weight: 900;
+      background: #f7fbff;
+      padding: 0 2px;
+    }
+    .pipe-k { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+    .pipe-v { margin-top: 4px; color: var(--ink); font-size: 14px; font-weight: 800; line-height: 1.25; }
     .muted, .tip { color: var(--muted); }
     .tip { font-size: 13px; line-height: 1.55; }
-    .method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
-    .method-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: #fff; }
-    .method-card strong { color: #111827; }
+    .task-panel {
+      display: grid;
+      grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: end;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px;
+      margin-top: 16px;
+    }
+    .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 22px; }
+    .section-head h2 { margin: 0; }
+    .title-row { display: inline-flex; align-items: center; gap: 7px; }
     .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
     .field-wrap { flex: 1 1 260px; min-width: 230px; }
     label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
@@ -47,7 +98,8 @@
       width: 100%;
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 10px 12px;
+      padding: 11px 12px;
+      min-height: 44px;
       font-size: 15px;
       outline: none;
       background: #fff;
@@ -55,23 +107,21 @@
     }
     input[type="text"]:focus, select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(190, 24, 93, 0.14);
+      box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.12);
     }
     button {
       border: 0;
       border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent), #db2777);
+      background: var(--accent);
       color: #fff;
+      min-height: 44px;
       padding: 10px 15px;
       font-size: 14px;
+      font-weight: 700;
       cursor: pointer;
     }
-    button.secondary { background: linear-gradient(135deg, var(--accent-2), #14b8a6); }
+    button.secondary { background: var(--accent-2); }
     button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 14px; }
-    .stat { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #fcfdff; }
-    .stat .k { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
-    .stat .v { font-size: 18px; font-weight: 700; color: #111827; word-break: break-word; }
     .chip {
       display: inline-block;
       border: 1px solid #fbcfe8;
@@ -83,102 +133,210 @@
       font-size: 12px;
       cursor: pointer;
     }
-    .hint { margin-top: 6px; min-height: 24px; }
-    .plot { width: 100%; height: 470px; border: 1px solid var(--border); border-radius: 10px; background: #fff; margin-top: 14px; }
-    .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
-    .leaderboard-wrap { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; margin-top: 14px; }
+    .stat { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: #fcfdff; }
+    .stat .k { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+    .stat .v { font-size: 18px; font-weight: 800; color: #111827; word-break: break-word; }
+    .gene-with-info { display: inline-flex; align-items: center; gap: 6px; }
+    .info-dot {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8;
+      font-size: 12px; font-weight: 800; cursor: pointer;
+      padding: 0;
+    }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; min-width: 180px; }
+    .tag {
+      display: inline-flex; align-items: center; border-radius: 999px;
+      padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.5;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .tag.repair { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    .tag.cycle { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+    .tag.kinase { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
+    .tag.tf { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+    .tag.receptor { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .tag.immune { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .tag.ecm { background: #fdf2f8; color: #be185d; border-color: #fbcfe8; }
+    .tag.metabolism { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+    .tag.signal { background: #fefce8; color: #854d0e; border-color: #fde68a; }
+    .tag.transport { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
+    .tag.apoptosis { background: #faf5ff; color: #7e22ce; border-color: #e9d5ff; }
+    .tag.development { background: #f7fee7; color: #4d7c0f; border-color: #d9f99d; }
+    .tag.tumor { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+    .tag.default { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+    .leaderboard-wrap, .panel {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
     .leaderboard-head { padding: 10px 12px; border-bottom: 1px solid var(--border); background: #f8fafc; font-size: 13px; color: var(--muted); }
-    .table-scroll { max-height: 440px; overflow: auto; }
+    .table-scroll { max-height: 470px; overflow: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { border-bottom: 1px solid #f1f5f9; padding: 8px 10px; text-align: left; white-space: nowrap; }
     thead th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
     tbody tr:hover { background: #fff7fb; cursor: pointer; }
+    .query-panel { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: #fff; margin-top: 16px; }
+    .insight-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+    .annotation-panel {
+      width: 100%;
+      min-height: 330px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 16px;
+    }
+    .annotation-panel h3 { margin: 0 0 8px; font-size: 18px; }
+    .annotation-summary { margin-top: 12px; color: #334155; line-height: 1.55; font-size: 15px; }
+    .fallback-note { margin-top: 12px; color: #475569; line-height: 1.55; }
+    .plot { width: 100%; height: 430px; border: 1px solid var(--border); border-radius: 10px; background: #fff; margin-top: 12px; }
+    .plot-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+    .hint { margin-top: 6px; min-height: 24px; }
     .ok { color: #047857; }
     .err { color: #b91c1c; }
+    .popover {
+      position: fixed;
+      z-index: 50;
+      width: min(360px, calc(100vw - 24px));
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, .18);
+      padding: 12px;
+      display: none;
+      color: #172033;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .popover.visible { display: block; }
+    .popover-title { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+    .popover-source { margin-top: 8px; color: var(--muted); font-size: 12px; }
     @media (max-width: 820px) {
-      .split { grid-template-columns: 1fr; }
-      .plot { height: 390px; }
-      h1 { font-size: 23px; }
+      .container { margin: 0; padding: 0; }
+      .shell { border-radius: 0; border-left: 0; border-right: 0; padding: 14px; }
+      h1 { font-size: 24px; }
+      .metric-strip, .pipeline, .plot-grid, .insight-grid, .task-panel { grid-template-columns: 1fr; }
+      .pipe-step:not(:last-child)::after { display: none; }
+      .section-head { display: block; }
+      .field-wrap { min-width: 100%; }
+      .row button { width: 100%; }
+      .plot { height: 360px; }
+      .table-scroll { max-height: 420px; }
+      th, td { padding: 8px; }
+      .tag-list { min-width: 0; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="card">
-      <h1>BRCA Full-Rank AUC Explorer</h1>
-      <div class="muted">This page audits candidate-gene ranking stability across 100 random train/test reruns. Every rerun assigns a full rank from 1 to 2000 to every gene; zero-gain genes are assigned rank 2000.</div>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">EACR local research explorer</p>
+        <h1>BRCA Top2000 Gene Explorer</h1>
+        <p class="hero-copy">This interactive view starts from TCGA-BRCA RNA expression with more than 20,000 measured genes. Repeated small-batch random-subspace XGBoost gives genes many local opportunities to compete, then each task keeps a 2,000-gene candidate panel for a 100-rerun stability audit. The goal is fast biological triage: which genes repeatedly rank high, what they do, and how stable their RNA-level signal is in this task.</p>
+        <div class="metric-strip">
+          <div class="metric"><div class="k">Starting space</div><div class="v">20k+ RNA genes</div></div>
+          <div class="metric"><div class="k">Displayed panel</div><div class="v">Top2000 per task</div></div>
+          <div class="metric"><div class="k">Audit depth</div><div class="v">100 reruns</div></div>
+        </div>
+        <div class="pipeline" aria-label="Top2000 selection workflow">
+          <div class="pipe-step"><div class="pipe-k">Input</div><div class="pipe-v">TCGA-BRCA RNA<br>20k+ genes</div></div>
+          <div class="pipe-step"><div class="pipe-k">Local contests</div><div class="pipe-v">Random gene batches<br>compete repeatedly</div></div>
+          <div class="pipe-step"><div class="pipe-k">Aggregate</div><div class="pipe-v">Gain ranks merged<br>across contexts</div></div>
+          <div class="pipe-step"><div class="pipe-k">Panel</div><div class="pipe-v">Task-specific<br>Top2000 genes</div></div>
+          <div class="pipe-step"><div class="pipe-k">Audit</div><div class="pipe-v">100 reruns test<br>rank stability</div></div>
+        </div>
+      </section>
 
-      <div class="method-grid">
-        <div class="method-card">
-          <h3>What this does</h3>
-          <div class="tip">Each task uses a fixed Top2000 gene universe selected from the most interpretable small-batch panel, then reruns XGBoost under 100 random stratified splits.</div>
-        </div>
-        <div class="method-card">
-          <h3>AUC ranking</h3>
-          <div class="tip">Per rerun score is <strong>2000 * (2000 - rank) / 1999</strong>. A gene always ranked 2000 has AUC score 0. The leaderboard is sorted by mean AUC score.</div>
-        </div>
-        <div class="method-card">
-          <h3>Rank quartiles</h3>
-          <div class="tip"><strong>Q1</strong> is ranks 1-500, <strong>Q2</strong> 501-1000, <strong>Q3</strong> 1001-1500, and <strong>Q4</strong> 1501-2000. Zero-gain genes contribute to Q4.</div>
-        </div>
-        <div class="method-card">
-          <h3>Rerank profile</h3>
-          <div class="tip"><strong>Full-rank AUC, depth 4, colsample_bytree=0.3, colsample_bynode=0.4</strong><br />binary: n_estimators=150, max_depth=4, learning_rate=0.03, subsample=0.8, colsample_bytree=0.3, colsample_bynode=0.4; multiclass: n_estimators=200, max_depth=4, learning_rate=0.03, subsample=0.8, colsample_bytree=0.3, colsample_bynode=0.4</div>
-        </div>
-        <div class="method-card">
-          <h3>Boundary</h3>
-          <div class="tip">This is a stability audit of candidate-gene ranking. It is not causal mechanism evidence and is not a clinical diagnostic result.</div>
-        </div>
-      </div>
-
-      <div class="row">
+      <section class="task-panel">
         <div class="field-wrap">
           <label for="taskSelect">Task</label>
           <select id="taskSelect"></select>
         </div>
-        <div class="field-wrap">
-          <label for="geneInputA">Gene A</label>
-          <input id="geneInputA" type="text" list="geneList" placeholder="e.g. ESR1" />
-          <div id="hintA" class="hint"></div>
+        <div class="tip">Choose the clinical or molecular task first; the Top100 table and all query plots update to that task's Top2000 candidate panel.</div>
+      </section>
+
+      <div class="section-head">
+        <div>
+          <h2 class="title-row">Top 100 Leaderboard <button class="info-dot" data-help-title="Top100 ranking score" data-help-body="Each rerun gives every Top2000 gene a full rank from 1 to 2000. Per-rerun rank score is 2000 * (2000 - rank) / 1999, so consistently high-ranking genes stay near the top. The leaderboard is sorted by the average score across 100 reruns.">i</button></h2>
+          <div class="tip">A quick scan of the strongest recurring RNA-level candidates in the selected task. Select a row to inspect the gene below.</div>
         </div>
-        <div class="field-wrap">
-          <label for="geneInputB">Gene B optional</label>
-          <input id="geneInputB" type="text" list="geneList" placeholder="e.g. ERBB2" />
-          <div id="hintB" class="hint"></div>
+        <div id="lbHead" class="tip">Waiting for task data...</div>
+      </div>
+      <div class="leaderboard-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>Gene</th><th>Function labels</th><th>Prior</th><th>AUC score</th><th>Median rank</th></tr></thead>
+            <tbody id="lbBody"></tbody>
+          </table>
         </div>
       </div>
-      <datalist id="geneList"></datalist>
-      <div class="row">
-        <button id="searchBtn" disabled>Single-Gene Query</button>
-        <button id="compareBtn" class="secondary" disabled>Two-Gene Comparison</button>
-        <span id="status" class="muted">Loading task manifest...</span>
-      </div>
+
+      <section class="query-panel">
+        <h2>Gene Query</h2>
+        <div class="tip">Search within the selected Top2000 panel. If a gene is absent, the page explains that this is a task-specific RNA-ranking result, not a judgment of biological importance.</div>
+        <div class="row">
+          <div class="field-wrap">
+            <label for="geneInputA">Gene A</label>
+            <input id="geneInputA" type="text" list="geneList" placeholder="e.g. ERBB2" />
+            <div id="hintA" class="hint"></div>
+          </div>
+          <div class="field-wrap">
+            <label for="geneInputB">Gene B optional</label>
+            <input id="geneInputB" type="text" list="geneList" placeholder="e.g. ESR1" />
+            <div id="hintB" class="hint"></div>
+          </div>
+        </div>
+        <datalist id="geneList"></datalist>
+        <div class="row">
+          <button id="searchBtn" disabled>Single-Gene Query</button>
+          <button id="compareBtn" class="secondary" disabled>Two-Gene Comparison</button>
+          <span id="status" class="muted">Loading task manifest...</span>
+        </div>
+      </section>
 
       <div class="stats">
         <div class="stat"><div class="k">Selected batch</div><div id="sBatch" class="v">-</div></div>
         <div class="stat"><div class="k">Gene A</div><div id="sGeneA" class="v">-</div></div>
         <div class="stat"><div class="k">A AUC score</div><div id="sScoreA" class="v">-</div></div>
-        <div class="stat"><div class="k">A Q rates</div><div id="sRatesA" class="v">-</div></div>
+        <div class="stat"><div class="k">A labels</div><div id="sTagsA" class="v">-</div></div>
         <div class="stat"><div class="k">A median rank</div><div id="sMedianA" class="v">-</div></div>
         <div class="stat"><div class="k">Gene B</div><div id="sGeneB" class="v">-</div></div>
         <div class="stat"><div class="k">B AUC score</div><div id="sScoreB" class="v">-</div></div>
         <div class="stat"><div class="k">Delta AUC B-A</div><div id="sDelta" class="v">-</div></div>
       </div>
 
-      <h2>Rank Distribution</h2>
-      <div id="rankPlot" class="plot"></div>
-      <div class="tip">Each dot is one random rerun. Lower rank is stronger. Zero-gain genes are visible at rank 2000.</div>
-
-      <div class="split">
+      <section class="insight-grid">
         <div>
-          <h2>Q1-Q4 Distribution</h2>
+          <h2>Selected Gene Insight</h2>
+          <div id="tagPanel" class="annotation-panel"></div>
+        </div>
+        <div>
+          <h2>Study Boundary</h2>
+          <div class="annotation-panel">
+            <h3>RNA signal is not the whole biology</h3>
+            <p class="annotation-summary">A missing or low-ranked gene may still be important through mutation, copy-number alteration, protein activity, pathway context, treatment response, or another cohort. This page only summarizes how strongly the gene appeared in this task's RNA-expression ranking experiment.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="plot-grid">
+        <div>
+          <h2 class="title-row">Q1-Q4 Distribution <button class="info-dot" data-help-title="Q1-Q4 rank bins" data-help-body="For each of the 100 reruns, the selected gene receives a rank within the Top2000 panel. Q1 means ranks 1-500, Q2 is 501-1000, Q3 is 1001-1500, and Q4 is 1501-2000. More Q1 mass means the gene repeatedly lands near the top.">i</button></h2>
           <div id="quartilePlot" class="plot"></div>
         </div>
         <div>
-          <h2>Rank CDF</h2>
+          <h2 class="title-row">Rank CDF <button class="info-dot" data-help-title="Rank CDF" data-help-body="The CDF shows the fraction of 100 reruns where a gene ranked at or above each threshold. A curve that rises early means the gene repeatedly appears near the top. The final point intentionally follows the previous value so rank-2000 fallback values do not create a misleading terminal jump.">i</button></h2>
           <div id="cdfPlot" class="plot"></div>
         </div>
       </div>
+
+      <h2 class="title-row">Rank Distribution <button class="info-dot" data-help-title="Rank distribution" data-help-body="Each dot is one random rerun. Lower rank is stronger. A compact band near the top suggests a stable RNA-level signal; scattered or low dots suggest weaker or less consistent ranking behavior.">i</button></h2>
+      <div id="rankPlot" class="plot"></div>
+      <div class="tip">Each dot is one random rerun. Lower rank is stronger. Zero-gain fallback ranks are kept visible in the dot plot but do not create a terminal jump in the CDF.</div>
 
       <h2>Per-Test Table</h2>
       <div class="row">
@@ -202,23 +360,13 @@
           </table>
         </div>
       </div>
-
-      <h2>Top 100 Leaderboard</h2>
-      <div class="muted">Sorted by AUC score, Q1 rate, median rank, mean rank, and gene name.</div>
-      <div class="leaderboard-wrap">
-        <div id="lbHead" class="leaderboard-head">Waiting for task data...</div>
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>#</th><th>Gene</th><th>Prior</th><th>AUC score</th><th>Q1 rate</th><th>Q2 rate</th><th>Q3 rate</th><th>Q4 rate</th><th>Median rank</th><th>Mean rank</th></tr></thead>
-            <tbody id="lbBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    </main>
   </div>
+  <div id="infoPopover" class="popover" role="dialog" aria-hidden="true"></div>
 
   <script>
     const Q_COLORS = { Q1: "#be185d", Q2: "#0f766e", Q3: "#d97706", Q4: "#64748b" };
+    const MISSING_NOTE = "This gene is not in the selected task's Top2000 RNA-level candidate panel. That does not mean the gene lacks biological or clinical value; it may be important through mutation, protein activity, treatment response, pathway context, or another dataset.";
     let manifest = [];
     let currentTask = null;
     let matrixRows = [];
@@ -226,6 +374,8 @@
     let longRows = [];
     let summaryMap = new Map();
     let matrixMap = new Map();
+    let annotations = {};
+    let activePopoverGene = null;
 
     const taskSelect = document.getElementById("taskSelect");
     const geneInputA = document.getElementById("geneInputA");
@@ -241,9 +391,14 @@
     const quartileFilter = document.getElementById("quartileFilter");
     const lbHead = document.getElementById("lbHead");
     const lbBody = document.getElementById("lbBody");
+    const tagPanel = document.getElementById("tagPanel");
+    const infoPopover = document.getElementById("infoPopover");
 
     function setStatus(msg, ok = true) { statusEl.textContent = msg; statusEl.className = ok ? "ok" : "err"; }
     function upper(v) { return String(v || "").trim().toUpperCase(); }
+    function esc(v) {
+      return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
     async function loadCsv(path) {
       const resp = await fetch(path, { cache: "no-store" });
       if (!resp.ok) throw new Error(path + " HTTP " + resp.status);
@@ -255,15 +410,57 @@
       const n = Number(value);
       return Number.isFinite(n) ? n.toFixed(digits) : "-";
     }
-    function pct(value) {
-      const n = Number(value);
-      return Number.isFinite(n) ? `${(100 * n).toFixed(0)}%` : "-";
-    }
     function rankCols() {
       return matrixRows.length ? Object.keys(matrixRows[0]).filter(k => k.startsWith("test_")) : [];
     }
     function resolveGene(q) { return summaryMap.get(upper(q)) || null; }
     function matrixFor(gene) { return matrixMap.get(upper(gene)) || null; }
+    function annotationFor(gene) { return annotations[upper(gene)] || {}; }
+    function allTags(gene) {
+      const ann = annotationFor(gene);
+      return [...(ann.function_tags || []), ...(ann.supplemental_tags || [])];
+    }
+    function tagClass(gene, tag) {
+      const ann = annotationFor(gene);
+      return ann.tag_classes && ann.tag_classes[tag] ? ann.tag_classes[tag] : "default";
+    }
+    function tagHtml(gene, max = 4) {
+      const tags = allTags(gene).slice(0, max);
+      if (!tags.length) return '<span class="tag default">Awaiting annotation</span>';
+      return tags.map(t => `<span class="tag ${esc(tagClass(gene, t))}">${esc(t)}</span>`).join("");
+    }
+    function geneInfoHtml(gene) {
+      return `<span class="gene-with-info"><strong>${esc(gene)}</strong><button class="info-dot" data-gene="${esc(gene)}" aria-label="Show ${esc(gene)} annotation">i</button></span>`;
+    }
+    function annotationHtml(gene) {
+      const ann = annotationFor(gene);
+      const tags = tagHtml(gene, 8);
+      const name = ann.name ? `<div class="muted">${esc(ann.name)}</div>` : '<div class="muted">Awaiting curated name</div>';
+      const type = ann.gene_type ? `<div class="popover-source">Type: ${esc(ann.gene_type)}</div>` : "";
+      const summary = ann.summary_50w ? esc(ann.summary_50w) : "Awaiting annotation. This candidate can still be explored through its rank behavior and task context while a curated gene summary is added.";
+      const source = ann.source ? esc(ann.source) : "local fallback";
+      return `<div class="popover-title">${esc(gene)}</div>${name}<div style="margin-top:8px;" class="tag-list">${tags}</div><div style="margin-top:10px;">${summary}</div>${type}<div class="popover-source">Annotation source: ${source}</div>`;
+    }
+    function helpHtml(anchor) {
+      return `<div class="popover-title">${esc(anchor.dataset.helpTitle || "How to read this")}</div><div>${esc(anchor.dataset.helpBody || "")}</div>`;
+    }
+    function showPopover(anchor) {
+      const key = anchor.dataset.gene || anchor.dataset.helpTitle || "";
+      activePopoverGene = key;
+      infoPopover.innerHTML = anchor.dataset.gene ? annotationHtml(anchor.dataset.gene) : helpHtml(anchor);
+      infoPopover.classList.add("visible");
+      infoPopover.setAttribute("aria-hidden", "false");
+      const rect = anchor.getBoundingClientRect();
+      const top = Math.min(window.innerHeight - infoPopover.offsetHeight - 10, rect.bottom + 8);
+      const left = Math.min(window.innerWidth - infoPopover.offsetWidth - 10, rect.left);
+      infoPopover.style.top = `${Math.max(10, top)}px`;
+      infoPopover.style.left = `${Math.max(10, left)}px`;
+    }
+    function hidePopover() {
+      activePopoverGene = null;
+      infoPopover.classList.remove("visible");
+      infoPopover.setAttribute("aria-hidden", "true");
+    }
     function qCounts(row) {
       return {
         Q1: Number(row.q1_count || 0),
@@ -272,29 +469,56 @@
         Q4: Number(row.q4_count || 0),
       };
     }
-    function qRateText(row) {
-      return `Q1 ${pct(row.q1_rate)} / Q2 ${pct(row.q2_rate)} / Q3 ${pct(row.q3_rate)} / Q4 ${pct(row.q4_rate)}`;
-    }
     function renderHints(input, box) {
       box.innerHTML = "";
       const q = upper(input.value);
       if (!q) return;
       const exact = resolveGene(q);
       const candidates = exact ? [exact] : summaryRows.filter(r => upper(r.gene).includes(q)).slice(0, 8);
+      if (!candidates.length) {
+        box.innerHTML = '<span class="chip">Explore candidate outside this Top2000</span>';
+        return;
+      }
       for (const r of candidates) {
         const chip = document.createElement("span");
         chip.className = "chip";
-        chip.textContent = `${r.gene} | AUC=${fmt(r.auc_score)} | median=${fmt(r.median_rank, 1)}`;
+        const tags = allTags(r.gene).slice(0, 2).join(", ");
+        chip.textContent = `${r.gene} | ${tags || "Awaiting annotation"} | AUC=${fmt(r.auc_score)}`;
         chip.onclick = () => { input.value = r.gene; renderHints(input, box); };
         box.appendChild(chip);
       }
     }
-    function updateStats(a, b = null) {
+    function renderTagPanel(a, b = null) {
+      const rows = b ? [a, b] : [a];
+      tagPanel.innerHTML = rows.map(r => {
+        const ann = annotationFor(r.gene);
+        const name = ann.name ? `<div class="muted">${esc(ann.name)}</div>` : '<div class="muted">Awaiting curated name</div>';
+        const summary = ann.summary_50w ? esc(ann.summary_50w) : "Awaiting annotation. Use the rank plots to explore this candidate while a curated summary is added.";
+        return `<div style="margin-bottom:18px;">
+          <h3>${geneInfoHtml(r.gene)}</h3>
+          ${name}
+          <div class="tag-list" style="margin-top:10px;">${tagHtml(r.gene, 8)}</div>
+          <div class="annotation-summary">${summary}</div>
+        </div>`;
+      }).join("");
+    }
+    function renderMissingGene(rawGene) {
+      const gene = upper(rawGene);
+      updateStats(null, null, gene);
+      tagPanel.innerHTML = `<h3>${esc(gene || "Unknown gene")}</h3><div class="tag-list"><span class="tag default">Explore candidate</span></div><p class="fallback-note">${MISSING_NOTE}</p>`;
+      Plotly.purge("quartilePlot");
+      Plotly.purge("cdfPlot");
+      Plotly.purge("rankPlot");
+      detailHead.textContent = `${gene || "Gene"} not found in current task Top2000`;
+      detailBody.innerHTML = `<tr><td colspan="8">${esc(MISSING_NOTE)}</td></tr>`;
+      setStatus(`${gene || "Gene"} is outside this task Top2000 panel`, false);
+    }
+    function updateStats(a, b = null, missingGene = "") {
       const task = manifest.find(x => x.task === currentTask);
       document.getElementById("sBatch").textContent = task ? task.selected_batch_size : "-";
-      document.getElementById("sGeneA").textContent = a ? a.gene : "-";
+      document.getElementById("sGeneA").textContent = a ? a.gene : (missingGene || "-");
       document.getElementById("sScoreA").textContent = a ? fmt(a.auc_score) : "-";
-      document.getElementById("sRatesA").textContent = a ? qRateText(a) : "-";
+      document.getElementById("sTagsA").innerHTML = a ? tagHtml(a.gene, 3) : '<span class="tag default">Explore candidate</span>';
       document.getElementById("sMedianA").textContent = a ? fmt(a.median_rank, 1) : "-";
       document.getElementById("sGeneB").textContent = b ? b.gene : "-";
       document.getElementById("sScoreB").textContent = b ? fmt(b.auc_score) : "-";
@@ -313,7 +537,7 @@
       const traces = [rankTrace(a, "#be185d")];
       if (b) traces.push(rankTrace(b, "#0f766e"));
       Plotly.newPlot("rankPlot", traces, {
-        margin: { l: 58, r: 18, t: 18, b: 92 },
+        margin: { l: 58, r: 18, t: 18, b: 70 },
         yaxis: { title: "Rank", autorange: "reversed", range: [2050, 0] },
         xaxis: { tickangle: -45, automargin: true, showticklabels: false },
         legend: { orientation: "h", y: 1.12 },
@@ -341,6 +565,7 @@
         x.push(t);
         y.push(ranks.filter(r => r <= t).length / 100);
       }
+      if (y.length >= 2) y[y.length - 1] = y[y.length - 2];
       return { type: "scatter", mode: "lines+markers", name: summaryRow.gene, x, y, line: { color, width: 2 }, hovertemplate: "rank <= %{x}<br>CDF %{y:.2f}<extra>%{fullData.name}</extra>" };
     }
     function renderCdfPlot(a, b = null) {
@@ -369,41 +594,53 @@
       detailBody.appendChild(frag);
     }
     function renderLeaderboard() {
-      lbHead.textContent = `${currentTask} top 100 genes | genes in task=${summaryRows.length}`;
+      lbHead.textContent = `${currentTask} | top 100 of ${summaryRows.length} panel genes`;
       lbBody.innerHTML = "";
       const frag = document.createDocumentFragment();
       summaryRows.slice(0, 100).forEach(r => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${r.leaderboard_rank}</td><td>${r.gene}</td><td>${r.prior_gene_set || "-"}</td><td>${fmt(r.auc_score)}</td><td>${pct(r.q1_rate)}</td><td>${pct(r.q2_rate)}</td><td>${pct(r.q3_rate)}</td><td>${pct(r.q4_rate)}</td><td>${fmt(r.median_rank, 1)}</td><td>${fmt(r.mean_rank, 1)}</td>`;
-        tr.onclick = () => { geneInputA.value = r.gene; querySingle(); };
+        tr.innerHTML = `<td>${r.leaderboard_rank}</td><td>${geneInfoHtml(r.gene)}</td><td><div class="tag-list">${tagHtml(r.gene)}</div></td><td>${r.prior_gene_set || "-"}</td><td>${fmt(r.auc_score)}</td><td>${fmt(r.median_rank, 1)}</td>`;
+        tr.onclick = (ev) => {
+          if (ev.target && ev.target.classList.contains("info-dot")) return;
+          geneInputA.value = r.gene;
+          querySingle();
+          document.querySelector(".query-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+        };
         frag.appendChild(tr);
       });
       lbBody.appendChild(frag);
     }
     function querySingle() {
       const a = resolveGene(geneInputA.value);
-      if (!a) return setStatus("Gene not found in current task: " + geneInputA.value, false);
+      if (!a) return renderMissingGene(geneInputA.value);
       geneInputA.value = a.gene;
       updateStats(a);
-      renderRankPlot(a);
+      renderTagPanel(a);
       renderQuartilePlot(a);
       renderCdfPlot(a);
+      renderRankPlot(a);
       renderDetail(a.gene);
       setStatus(`Loaded ${currentTask}: ${a.gene}`, true);
     }
     function queryCompare() {
       const a = resolveGene(geneInputA.value);
       const b = resolveGene(geneInputB.value);
-      if (!a || !b) return setStatus("Compare mode needs two valid genes in the current task.", false);
+      if (!a) return renderMissingGene(geneInputA.value);
+      if (!b) {
+        renderMissingGene(geneInputB.value);
+        geneInputA.value = a.gene;
+        return setStatus("Gene B is outside this task Top2000 panel.", false);
+      }
       geneInputA.value = a.gene; geneInputB.value = b.gene;
       updateStats(a, b);
-      renderRankPlot(a, b);
+      renderTagPanel(a, b);
       renderQuartilePlot(a, b);
       renderCdfPlot(a, b);
+      renderRankPlot(a, b);
       renderDetail(a.gene);
       setStatus(`Comparing ${a.gene} and ${b.gene}`, true);
     }
-    async function loadTask(task) {
+    async function loadTask(task, preferredGene = null) {
       currentTask = task;
       const meta = manifest.find(r => r.task === task);
       setStatus("Loading " + task + "...", true);
@@ -418,12 +655,25 @@
       geneList.appendChild(frag);
       renderLeaderboard();
       searchBtn.disabled = false; compareBtn.disabled = false;
-      const preferred = ["PGR", "ESR1", "ERBB2", "GATA3", "MIA", "SFRP1"].find(g => summaryMap.has(g));
+      const preferred = [preferredGene, "ERBB2", "ESR1", "GATA3", "PGR", "FOXA1"].filter(Boolean).find(g => summaryMap.has(upper(g)));
       geneInputA.value = preferred || summaryRows[0].gene;
+      geneInputB.value = "";
       querySingle();
+    }
+    async function taskHasGene(task, gene) {
+      const meta = manifest.find(r => r.task === task);
+      if (!meta) return false;
+      const rows = await loadCsv(meta.summary_csv);
+      return rows.some(r => upper(r.gene) === upper(gene));
     }
     async function init() {
       try {
+        try {
+          const annResp = await fetch("gene_function_annotations.json", { cache: "no-store" });
+          if (annResp.ok) annotations = await annResp.json();
+        } catch (_e) {
+          annotations = {};
+        }
         manifest = await loadCsv("task_manifest.csv");
         taskSelect.innerHTML = "";
         manifest.forEach(r => {
@@ -432,12 +682,19 @@
           opt.textContent = `${r.task} | batch ${r.selected_batch_size}`;
           taskSelect.appendChild(opt);
         });
-        await loadTask(manifest[0].task);
+        let initialTask = manifest.some(r => r.task === "her2_status") ? "her2_status" : manifest[0].task;
+        if (!(await taskHasGene(initialTask, "ERBB2"))) {
+          for (const row of manifest) {
+            if (await taskHasGene(row.task, "ERBB2")) { initialTask = row.task; break; }
+          }
+        }
+        taskSelect.value = initialTask;
+        await loadTask(initialTask, "ERBB2");
       } catch (e) {
         setStatus("Load failed: " + e.message, false);
       }
     }
-    taskSelect.addEventListener("change", () => loadTask(taskSelect.value));
+    taskSelect.addEventListener("change", () => loadTask(taskSelect.value, "ERBB2"));
     searchBtn.onclick = querySingle;
     compareBtn.onclick = queryCompare;
     geneInputA.addEventListener("input", () => renderHints(geneInputA, hintA));
@@ -445,6 +702,28 @@
     geneInputA.addEventListener("keydown", ev => { if (ev.key === "Enter") querySingle(); });
     geneInputB.addEventListener("keydown", ev => { if (ev.key === "Enter") queryCompare(); });
     quartileFilter.addEventListener("change", () => { const a = resolveGene(geneInputA.value); if (a) renderDetail(a.gene); });
+    document.addEventListener("mouseover", ev => {
+      const dot = ev.target.closest && ev.target.closest(".info-dot");
+      if (dot) showPopover(dot);
+    });
+    document.addEventListener("focusin", ev => {
+      const dot = ev.target.closest && ev.target.closest(".info-dot");
+      if (dot) showPopover(dot);
+    });
+    document.addEventListener("mouseout", ev => {
+      if (ev.target.closest && ev.target.closest(".info-dot") && !infoPopover.matches(":hover")) hidePopover();
+    });
+    document.addEventListener("click", ev => {
+      const dot = ev.target.closest && ev.target.closest(".info-dot");
+      if (dot) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const key = dot.dataset.gene || dot.dataset.helpTitle || "";
+        activePopoverGene === key ? hidePopover() : showPopover(dot);
+      } else if (!ev.target.closest || !ev.target.closest("#infoPopover")) {
+        hidePopover();
+      }
+    });
     init();
   </script>
 </body>
