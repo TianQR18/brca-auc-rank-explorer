@@ -136,6 +136,28 @@
       gap: 10px;
     }
 
+    .contact-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 620;
+    }
+
+    .contact-strip a,
+    .footer a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    .contact-strip a:hover,
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
     .button {
       min-height: 42px;
       padding: 10px 16px;
@@ -232,17 +254,17 @@
     }
 
     .quote {
-      padding: 110px 0;
+      padding: 86px 0;
       color: var(--white);
       background: #1d1d1f;
       text-align: center;
     }
 
     .quote p {
-      max-width: 980px;
+      max-width: 860px;
       margin: 0 auto;
-      font-size: clamp(34px, 5.2vw, 76px);
-      line-height: 1.04;
+      font-size: clamp(30px, 4.2vw, 58px);
+      line-height: 1.08;
       font-weight: 740;
       letter-spacing: 0;
     }
@@ -348,7 +370,7 @@
 
     .download-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -485,13 +507,13 @@
 </head>
 <body>
   <nav class="nav" aria-label="Page navigation">
-    <div class="nav-inner">
+      <div class="nav-inner">
       <a class="brand" href="#">EACR 2026</a>
       <div class="nav-links">
         <a href="#evidence">Evidence</a>
         <a href="#prognosis">Prognosis</a>
         <a href="#downloads">Downloads</a>
-        <a href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">Poster</a>
+        <a href="#contact">Contact</a>
       </div>
     </div>
   </nav>
@@ -503,8 +525,15 @@
           <h1>Top genes are not a single answer.</h1>
           <p class="lead">A leakage-aware repeated XGBoost screen for more stable TCGA-BRCA gene discovery.</p>
           <div class="actions" aria-label="Primary downloads">
-            <a class="button" href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">Download poster</a>
-            <a class="button secondary" href="downloads/eacr2026/paper_draft_en.pdf">Read draft</a>
+            <a class="button" href="downloads/eacr2026/paper_draft_en.pdf">Read draft PDF</a>
+            <a class="button secondary" href="#downloads">Top30 panels</a>
+          </div>
+          <div id="contact" class="contact-strip" aria-label="Contact links">
+            <a href="mailto:Tianqr18@gmail.com">Tianqr18@gmail.com</a>
+            <span>|</span>
+            <a href="https://www.linkedin.com/in/qirui-tian-4b25b22b9/" target="_blank" rel="noopener">LinkedIn: Qirui Tian</a>
+            <span>|</span>
+            <a href="https://novoradiant.com/" target="_blank" rel="noopener">NovoRadiant</a>
           </div>
         </div>
 
@@ -522,8 +551,8 @@
 
     <section class="quote" aria-label="Why this matters">
       <div class="wrap">
-        <p>Human time is more expensive than machine time.</p>
-        <span>I would rather run 100 extra repeats than spend months validating a split-seed accident.</span>
+        <p>Spend compute before spending follow-up time.</p>
+        <span>Extra repeats are a small computational cost compared with months spent chasing split-dependent candidate genes.</span>
       </div>
     </section>
 
@@ -541,7 +570,7 @@
               <h3>Keep selection inside the fold.</h3>
               <p>Every ranking step happens after the split. The held-out samples do not vote for the genes.</p>
             </div>
-            <a class="figure-frame" href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">
+            <a class="figure-frame" href="assets/eacr2026/figure1_workflow.png">
               <img src="assets/eacr2026/figure1_workflow.png" alt="Leakage-aware random-subspace XGBoost workflow.">
             </a>
           </article>
@@ -552,7 +581,7 @@
               <h3>Stability can improve without buying accuracy.</h3>
               <p>Small-batch or consensus Top100 lists are more reproducible while internal CV5 performance is retained.</p>
             </div>
-            <a class="figure-frame" href="downloads/eacr2026/figure2_stability.pdf">
+            <a class="figure-frame" href="assets/eacr2026/figure2_stability.png">
               <img src="assets/eacr2026/figure2_stability.png" alt="Stability and performance figure with recovery heatmap.">
             </a>
           </article>
@@ -563,7 +592,7 @@
               <h3>Baselines keep the claim honest.</h3>
               <p>XGBoost, regression and elastic net all see task signal; METABRIC transfer is used as a constraint, not a victory lap.</p>
             </div>
-            <a class="figure-frame" href="downloads/eacr2026/figure3_validation_and_baselines.pdf">
+            <a class="figure-frame" href="assets/eacr2026/figure3_validation.png">
               <img src="assets/eacr2026/figure3_validation.png" alt="Baseline and METABRIC validation figure.">
             </a>
           </article>
@@ -578,14 +607,14 @@
           <p class="short">Useful for the website and discussion. Too provisional to carry the main poster alone.</p>
         </div>
         <div class="prognosis-grid">
-          <a class="figure-frame" href="downloads/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.pdf">
+          <a class="figure-frame" href="assets/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.png">
             <img src="assets/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.png" alt="Internal TCGA exploratory prognosis C-index comparison with regression and elastic net baselines.">
           </a>
           <div class="stack">
-            <a class="figure-frame" href="downloads/eacr2026/prognosis_latest_external_batch_heatmap.pdf">
+            <a class="figure-frame" href="assets/eacr2026/prognosis_latest_external_batch_heatmap.png">
               <img src="assets/eacr2026/prognosis_latest_external_batch_heatmap.png" alt="External prognosis C-index heatmap across batch sizes.">
             </a>
-            <a class="figure-frame" href="downloads/eacr2026/prognosis_latest_external_top_gain_genes.pdf">
+            <a class="figure-frame" href="assets/eacr2026/prognosis_latest_external_top_gain_genes.png">
               <img src="assets/eacr2026/prognosis_latest_external_top_gain_genes.png" alt="Top external prognosis model gain genes.">
             </a>
           </div>
@@ -597,13 +626,9 @@
       <div class="wrap">
         <div class="section-head">
           <h2>Files, quietly.</h2>
-          <p class="short">Poster, PDF draft, source tables and Top30 panels.</p>
+          <p class="short">Draft PDF and two Top30 gene-panel tables only.</p>
         </div>
         <div class="download-grid">
-          <a class="download" href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">
-            <strong>Poster PPTX</strong>
-            <span>A0 landscape, current figure set</span>
-          </a>
           <a class="download" href="downloads/eacr2026/paper_draft_en.pdf">
             <strong>Draft PDF</strong>
             <span>English manuscript-style notes</span>
@@ -616,42 +641,6 @@
             <strong>Prognosis Top30</strong>
             <span>Latest exploratory panels</span>
           </a>
-          <a class="download" href="downloads/eacr2026/figure2a_top100_stability_and_cv5_performance.csv">
-            <strong>Figure 2A data</strong>
-            <span>Top100 stability and CV5 performance</span>
-          </a>
-          <a class="download" href="downloads/eacr2026/figure2c_prior_union_recovery_heatmap.csv">
-            <strong>Figure 2C data</strong>
-            <span>Prior-gene recovery heatmap</span>
-          </a>
-          <a class="download" href="downloads/eacr2026/figure3b_metabric_external_validation_summary.csv">
-            <strong>METABRIC data</strong>
-            <span>External classification summary</span>
-          </a>
-          <a class="download" href="downloads/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.csv">
-            <strong>Prognosis data</strong>
-            <span>Internal C-index baselines</span>
-          </a>
-          <a class="download" href="downloads/eacr2026/eacr2026_ai_background_editable_text_template.pptx">
-            <strong>Design PPT</strong>
-            <span>AI background with editable text boxes</span>
-          </a>
-          <a class="download" href="downloads/eacr2026/poster_ai_blank_background_template.png">
-            <strong>Blank background</strong>
-            <span>A0-style poster background PNG</span>
-          </a>
-          <a class="download" href="downloads/eacr2026/eacr2026_poster_copy_blocks.md">
-            <strong>Copy blocks</strong>
-            <span>Poster text for PowerPoint</span>
-          </a>
-          <a class="download" href="downloads/eacr2026/eacr2026_imrd_medical_poster_with_figures.pptx">
-            <strong>IMRD poster PPT</strong>
-            <span>Medical-style layout with figures</span>
-          </a>
-          <a class="download" href="downloads/eacr2026/eacr2026_imrd_text_placement_guide.md">
-            <strong>Text placement</strong>
-            <span>Exact copy, positions and font sizes</span>
-          </a>
         </div>
       </div>
     </section>
@@ -660,7 +649,7 @@
   <footer class="footer">
     <div class="footer-inner">
       <span>Remote companion for EACR 2026. Author cannot attend in person.</span>
-      <span>Contact: Tianqr18@gmail.com</span>
+      <span><a href="mailto:Tianqr18@gmail.com">Email</a> | <a href="https://www.linkedin.com/in/qirui-tian-4b25b22b9/" target="_blank" rel="noopener">LinkedIn</a> | <a href="https://novoradiant.com/" target="_blank" rel="noopener">NovoRadiant</a></span>
     </div>
   </footer>
 </body>
