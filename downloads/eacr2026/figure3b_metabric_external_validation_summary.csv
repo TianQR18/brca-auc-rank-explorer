@@ -1,0 +1,7 @@
+task,task_label,metric_name,full_primary_metric,consensus_primary_metric,consensus_minus_full,metabric_n_note
+er_status,ER status,AUC,0.98760303371605,0.9881101473150996,0.0005071135990496,METABRIC primary tumors; tumour-normal not applicable
+her2_status,HER2 status,AUC,0.9933173850779462,0.9921820063497108,-0.0011353787282354,METABRIC primary tumors; tumour-normal not applicable
+ihc_subtype,IHC subtype,macro F1,0.824530329636881,0.8196753408162804,-0.0048549888206006,METABRIC primary tumors; tumour-normal not applicable
+pam50_subtype,PAM50 subtype,macro F1,0.7672776735788425,0.7644392912329044,-0.002838382345938,METABRIC primary tumors; tumour-normal not applicable
+pam50_subtype_no_pam50_genes,PAM50 without PAM50 genes,macro F1,0.756124408623897,0.7587076569012089,0.0025832482773119,METABRIC primary tumors; tumour-normal not applicable
+tnbc_status,TNBC status,AUC,0.9865690888554216,0.9830374623493976,-0.003531626506024,METABRIC primary tumors; tumour-normal not applicable

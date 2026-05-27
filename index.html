@@ -1,730 +1,667 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BRCA Top2000 Gene Explorer</title>
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Top genes are not a single answer | EACR 2026</title>
+  <meta name="description" content="Remote companion page for an EACR 2026 poster on leakage-aware repeated XGBoost screening and biomarker stability in TCGA-BRCA.">
+  <meta property="og:title" content="Top genes are not a single answer">
+  <meta property="og:description" content="Leakage-aware repeated XGBoost screening for more stable TCGA-BRCA top-gene discovery.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/eacr2026/figure2_stability.png">
   <style>
     :root {
-      --bg: #f6f8fb;
-      --card: #ffffff;
-      --text: #172033;
-      --muted: #5f6f89;
-      --border: #dfe6ef;
-      --accent: #c2185b;
-      --accent-2: #00897b;
-      --ink: #0f172a;
+      --ink: #1d1d1f;
+      --muted: #6e7783;
+      --line: #d8dee6;
+      --soft: #f5f7fa;
+      --blue: #315f8a;
+      --blue-2: #527ea5;
+      --red: #c44e4a;
+      --white: #ffffff;
+      --shadow: 0 28px 70px rgba(29, 29, 31, 0.12);
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       margin: 0;
-      font-family: "Segoe UI", Arial, sans-serif;
-      color: var(--text);
-      background: var(--bg);
-      min-height: 100vh;
+      color: var(--ink);
+      background: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
     }
-    .container { max-width: 1240px; margin: 22px auto; padding: 0 16px 40px; }
-    .shell {
-      background: rgba(255, 255, 255, 0.98);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px;
-      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+
+    a {
+      color: inherit;
+      text-decoration: none;
     }
-    .hero {
-      border: 1px solid #d9e7f7;
-      border-radius: 10px;
-      padding: 20px;
-      background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
-    }
-    .eyebrow { margin: 0 0 6px; color: var(--accent); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
-    h1 { margin: 0; font-size: 30px; line-height: 1.12; letter-spacing: 0; }
-    h2 { margin: 24px 0 8px; font-size: 20px; letter-spacing: 0; }
-    h3 { margin: 0 0 8px; font-size: 15px; letter-spacing: 0; }
-    .hero-copy { max-width: 920px; margin: 10px 0 0; color: #334155; line-height: 1.58; font-size: 15px; }
-    .metric-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
-    .metric { border: 1px solid var(--border); border-radius: 8px; padding: 11px 12px; background: #fff; }
-    .metric .k { color: var(--muted); font-size: 12px; }
-    .metric .v { margin-top: 2px; font-size: 20px; font-weight: 800; color: var(--ink); }
-    .pipeline {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 16px;
-    }
-    .pipe-step {
-      position: relative;
-      border: 1px solid #d8e4f2;
-      border-radius: 8px;
-      padding: 10px;
-      background: #fff;
-      min-height: 74px;
-    }
-    .pipe-step:not(:last-child)::after {
-      content: ">";
-      position: absolute;
-      right: -8px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #7c8da5;
-      font-weight: 900;
-      background: #f7fbff;
-      padding: 0 2px;
-    }
-    .pipe-k { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
-    .pipe-v { margin-top: 4px; color: var(--ink); font-size: 14px; font-weight: 800; line-height: 1.25; }
-    .muted, .tip { color: var(--muted); }
-    .tip { font-size: 13px; line-height: 1.55; }
-    .task-panel {
-      display: grid;
-      grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
-      gap: 14px;
-      align-items: end;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #fff;
-      padding: 14px;
-      margin-top: 16px;
-    }
-    .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 22px; }
-    .section-head h2 { margin: 0; }
-    .title-row { display: inline-flex; align-items: center; gap: 7px; }
-    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
-    .field-wrap { flex: 1 1 260px; min-width: 230px; }
-    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-    input[type="text"], select {
+
+    img {
+      display: block;
       width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 11px 12px;
-      min-height: 44px;
-      font-size: 15px;
-      outline: none;
-      background: #fff;
-      color: var(--text);
+      max-width: 100%;
     }
-    input[type="text"]:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.12);
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(216, 222, 230, 0.76);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(18px);
     }
-    button {
-      border: 0;
-      border-radius: 10px;
-      background: var(--accent);
-      color: #fff;
-      min-height: 44px;
-      padding: 10px 15px;
+
+    .nav-inner {
+      width: min(1180px, calc(100% - 36px));
+      min-height: 54px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
       font-size: 14px;
       font-weight: 700;
-      cursor: pointer;
-    }
-    button.secondary { background: var(--accent-2); }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .chip {
-      display: inline-block;
-      border: 1px solid #fbcfe8;
-      background: #fdf2f8;
-      color: #9d174d;
-      border-radius: 999px;
-      padding: 3px 10px;
-      margin: 0 6px 6px 0;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; margin-top: 14px; }
-    .stat { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: #fcfdff; }
-    .stat .k { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
-    .stat .v { font-size: 18px; font-weight: 800; color: #111827; word-break: break-word; }
-    .gene-with-info { display: inline-flex; align-items: center; gap: 6px; }
-    .info-dot {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 18px; height: 18px; border-radius: 50%;
-      border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8;
-      font-size: 12px; font-weight: 800; cursor: pointer;
-      padding: 0;
-    }
-    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; min-width: 180px; }
-    .tag {
-      display: inline-flex; align-items: center; border-radius: 999px;
-      padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.5;
-      border: 1px solid transparent;
       white-space: nowrap;
     }
-    .tag.repair { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-    .tag.cycle { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
-    .tag.kinase { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
-    .tag.tf { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
-    .tag.receptor { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
-    .tag.immune { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
-    .tag.ecm { background: #fdf2f8; color: #be185d; border-color: #fbcfe8; }
-    .tag.metabolism { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
-    .tag.signal { background: #fefce8; color: #854d0e; border-color: #fde68a; }
-    .tag.transport { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
-    .tag.apoptosis { background: #faf5ff; color: #7e22ce; border-color: #e9d5ff; }
-    .tag.development { background: #f7fee7; color: #4d7c0f; border-color: #d9f99d; }
-    .tag.tumor { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
-    .tag.default { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
-    .leaderboard-wrap, .panel {
-      margin-top: 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      background: #fff;
-    }
-    .leaderboard-head { padding: 10px 12px; border-bottom: 1px solid var(--border); background: #f8fafc; font-size: 13px; color: var(--muted); }
-    .table-scroll { max-height: 470px; overflow: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border-bottom: 1px solid #f1f5f9; padding: 8px 10px; text-align: left; white-space: nowrap; }
-    thead th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
-    tbody tr:hover { background: #fff7fb; cursor: pointer; }
-    .query-panel { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: #fff; margin-top: 16px; }
-    .insight-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
-    .annotation-panel {
-      width: 100%;
-      min-height: 330px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #fff;
-      padding: 16px;
-    }
-    .annotation-panel h3 { margin: 0 0 8px; font-size: 18px; }
-    .annotation-summary { margin-top: 12px; color: #334155; line-height: 1.55; font-size: 15px; }
-    .fallback-note { margin-top: 12px; color: #475569; line-height: 1.55; }
-    .plot { width: 100%; height: 430px; border: 1px solid var(--border); border-radius: 10px; background: #fff; margin-top: 12px; }
-    .plot-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
-    .hint { margin-top: 6px; min-height: 24px; }
-    .ok { color: #047857; }
-    .err { color: #b91c1c; }
-    .popover {
-      position: fixed;
-      z-index: 50;
-      width: min(360px, calc(100vw - 24px));
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      background: #fff;
-      box-shadow: 0 16px 40px rgba(15, 23, 42, .18);
-      padding: 12px;
-      display: none;
-      color: #172033;
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
       font-size: 13px;
-      line-height: 1.45;
+      font-weight: 600;
     }
-    .popover.visible { display: block; }
-    .popover-title { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
-    .popover-source { margin-top: 8px; color: var(--muted); font-size: 12px; }
-    @media (max-width: 820px) {
-      .container { margin: 0; padding: 0; }
-      .shell { border-radius: 0; border-left: 0; border-right: 0; padding: 14px; }
-      h1 { font-size: 24px; }
-      .metric-strip, .pipeline, .plot-grid, .insight-grid, .task-panel { grid-template-columns: 1fr; }
-      .pipe-step:not(:last-child)::after { display: none; }
-      .section-head { display: block; }
-      .field-wrap { min-width: 100%; }
-      .row button { width: 100%; }
-      .plot { height: 360px; }
-      .table-scroll { max-height: 420px; }
-      th, td { padding: 8px; }
-      .tag-list { min-width: 0; }
+
+    .nav-links a:hover {
+      color: var(--blue);
+    }
+
+    .hero {
+      min-height: 92vh;
+      padding: 86px 0 48px;
+      display: grid;
+      align-items: end;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+    }
+
+    .hero-copy {
+      max-width: 880px;
+      margin-bottom: 42px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 18px;
+      font-size: clamp(48px, 7vw, 104px);
+      line-height: 0.96;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 760px;
+      margin-bottom: 28px;
+      color: #384150;
+      font-size: clamp(20px, 2.3vw, 31px);
+      line-height: 1.24;
+      font-weight: 520;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .button {
+      min-height: 42px;
+      padding: 10px 16px;
+      border: 1px solid var(--ink);
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      background: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .button.secondary {
+      color: var(--ink);
+      background: transparent;
+      border-color: var(--line);
+    }
+
+    .stage {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(216, 222, 230, 0.96);
+      border-radius: 8px;
+      background: var(--white);
+      box-shadow: var(--shadow);
+    }
+
+    .stage img {
+      aspect-ratio: 16 / 8.4;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .metric-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 1px;
+      background: var(--line);
+    }
+
+    .metric {
+      min-height: 106px;
+      padding: 20px;
+      background: var(--white);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--blue);
+      font-size: clamp(28px, 3.5vw, 46px);
+      line-height: 1;
+      font-weight: 760;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+
+    section {
+      padding: 96px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 28px;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      margin-bottom: 0;
+      font-size: clamp(34px, 4.5vw, 64px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      font-weight: 740;
+    }
+
+    .short {
+      max-width: 430px;
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    .quote {
+      padding: 110px 0;
+      color: var(--white);
+      background: #1d1d1f;
+      text-align: center;
+    }
+
+    .quote p {
+      max-width: 980px;
+      margin: 0 auto;
+      font-size: clamp(34px, 5.2vw, 76px);
+      line-height: 1.04;
+      font-weight: 740;
+      letter-spacing: 0;
+    }
+
+    .quote span {
+      display: block;
+      max-width: 620px;
+      margin: 24px auto 0;
+      color: #bcc4cf;
+      font-size: clamp(16px, 1.8vw, 22px);
+      line-height: 1.38;
+      font-weight: 520;
+    }
+
+    .figure-flow {
+      display: grid;
+      gap: 52px;
+    }
+
+    .figure-row {
+      display: grid;
+      grid-template-columns: 0.82fr 1.18fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .figure-row.reverse {
+      grid-template-columns: 1.18fr 0.82fr;
+    }
+
+    .figure-row.reverse .figure-copy {
+      order: 2;
+    }
+
+    .figure-copy {
+      max-width: 420px;
+    }
+
+    .kicker {
+      margin-bottom: 12px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    h3 {
+      margin-bottom: 12px;
+      font-size: clamp(26px, 3vw, 42px);
+      line-height: 1.05;
+      letter-spacing: 0;
+      font-weight: 730;
+    }
+
+    .figure-copy p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    .figure-frame {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      box-shadow: 0 18px 52px rgba(29, 29, 31, 0.08);
+    }
+
+    .figure-frame img {
+      aspect-ratio: 16 / 9;
+      object-fit: contain;
+      background: var(--white);
+    }
+
+    .prognosis {
+      background: var(--soft);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .prognosis-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .prognosis-grid .figure-frame:first-child img {
+      aspect-ratio: 16 / 10;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .stack img {
+      aspect-ratio: 16 / 10.2;
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .download {
+      min-height: 118px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .download:hover {
+      transform: translateY(-2px);
+      border-color: rgba(82, 126, 165, 0.65);
+      box-shadow: 0 14px 38px rgba(29, 29, 31, 0.08);
+    }
+
+    .download strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .download span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+
+    .footer {
+      padding: 34px 0 44px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 58px;
+      }
+
+      .stage img {
+        aspect-ratio: 4 / 3;
+      }
+
+      .metric-strip,
+      .download-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .section-head,
+      .figure-row,
+      .figure-row.reverse,
+      .prognosis-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: grid;
+        align-items: start;
+        gap: 14px;
+      }
+
+      .figure-row.reverse .figure-copy {
+        order: 0;
+      }
+
+      .short,
+      .figure-copy {
+        max-width: none;
+      }
+
+      section {
+        padding: 72px 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .wrap,
+      .nav-inner,
+      .footer-inner {
+        width: min(100% - 24px, 1180px);
+      }
+
+      h1 {
+        font-size: 46px;
+      }
+
+      .lead {
+        font-size: 20px;
+      }
+
+      .quote {
+        padding: 76px 0;
+      }
+
+      .metric-strip,
+      .download-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metric {
+        min-height: 92px;
+      }
+
+      .figure-frame img,
+      .prognosis-grid .figure-frame:first-child img,
+      .stack img {
+        aspect-ratio: 4 / 3;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <main class="shell">
-      <section class="hero">
-        <p class="eyebrow">EACR local research explorer</p>
-        <h1>BRCA Top2000 Gene Explorer</h1>
-        <p class="hero-copy">This interactive view starts from TCGA-BRCA RNA expression with more than 20,000 measured genes. Repeated small-batch random-subspace XGBoost gives genes many local opportunities to compete, then each task keeps a 2,000-gene candidate panel for a 100-rerun stability audit. The goal is fast biological triage: which genes repeatedly rank high, what they do, and how stable their RNA-level signal is in this task.</p>
-        <div class="metric-strip">
-          <div class="metric"><div class="k">Starting space</div><div class="v">20k+ RNA genes</div></div>
-          <div class="metric"><div class="k">Displayed panel</div><div class="v">Top2000 per task</div></div>
-          <div class="metric"><div class="k">Audit depth</div><div class="v">100 reruns</div></div>
-        </div>
-        <div class="pipeline" aria-label="Top2000 selection workflow">
-          <div class="pipe-step"><div class="pipe-k">Input</div><div class="pipe-v">TCGA-BRCA RNA<br>20k+ genes</div></div>
-          <div class="pipe-step"><div class="pipe-k">Local contests</div><div class="pipe-v">Random gene batches<br>compete repeatedly</div></div>
-          <div class="pipe-step"><div class="pipe-k">Aggregate</div><div class="pipe-v">Gain ranks merged<br>across contexts</div></div>
-          <div class="pipe-step"><div class="pipe-k">Panel</div><div class="pipe-v">Task-specific<br>Top2000 genes</div></div>
-          <div class="pipe-step"><div class="pipe-k">Audit</div><div class="pipe-v">100 reruns test<br>rank stability</div></div>
-        </div>
-      </section>
-
-      <section class="task-panel">
-        <div class="field-wrap">
-          <label for="taskSelect">Task</label>
-          <select id="taskSelect"></select>
-        </div>
-        <div class="tip">Choose the clinical or molecular task first; the Top100 table and all query plots update to that task's Top2000 candidate panel.</div>
-      </section>
-
-      <div class="section-head">
-        <div>
-          <h2 class="title-row">Top 100 Leaderboard <button class="info-dot" data-help-title="Top100 ranking score" data-help-body="Each rerun gives every Top2000 gene a full rank from 1 to 2000. Per-rerun rank score is 2000 * (2000 - rank) / 1999, so consistently high-ranking genes stay near the top. The leaderboard is sorted by the average score across 100 reruns.">i</button></h2>
-          <div class="tip">A quick scan of the strongest recurring RNA-level candidates in the selected task. Select a row to inspect the gene below.</div>
-        </div>
-        <div id="lbHead" class="tip">Waiting for task data...</div>
+  <nav class="nav" aria-label="Page navigation">
+    <div class="nav-inner">
+      <a class="brand" href="#">EACR 2026</a>
+      <div class="nav-links">
+        <a href="#evidence">Evidence</a>
+        <a href="#prognosis">Prognosis</a>
+        <a href="#downloads">Downloads</a>
+        <a href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">Poster</a>
       </div>
-      <div class="leaderboard-wrap">
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>#</th><th>Gene</th><th>Function labels</th><th>Prior</th><th>AUC score</th><th>Median rank</th></tr></thead>
-            <tbody id="lbBody"></tbody>
-          </table>
-        </div>
-      </div>
+    </div>
+  </nav>
 
-      <section class="query-panel">
-        <h2>Gene Query</h2>
-        <div class="tip">Search within the selected Top2000 panel. If a gene is absent, the page explains that this is a task-specific RNA-ranking result, not a judgment of biological importance.</div>
-        <div class="row">
-          <div class="field-wrap">
-            <label for="geneInputA">Gene A</label>
-            <input id="geneInputA" type="text" list="geneList" placeholder="e.g. ERBB2" />
-            <div id="hintA" class="hint"></div>
-          </div>
-          <div class="field-wrap">
-            <label for="geneInputB">Gene B optional</label>
-            <input id="geneInputB" type="text" list="geneList" placeholder="e.g. ESR1" />
-            <div id="hintB" class="hint"></div>
+  <main>
+    <header class="hero">
+      <div class="wrap">
+        <div class="hero-copy">
+          <h1>Top genes are not a single answer.</h1>
+          <p class="lead">A leakage-aware repeated XGBoost screen for more stable TCGA-BRCA gene discovery.</p>
+          <div class="actions" aria-label="Primary downloads">
+            <a class="button" href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">Download poster</a>
+            <a class="button secondary" href="downloads/eacr2026/paper_draft_en.pdf">Read draft</a>
           </div>
         </div>
-        <datalist id="geneList"></datalist>
-        <div class="row">
-          <button id="searchBtn" disabled>Single-Gene Query</button>
-          <button id="compareBtn" class="secondary" disabled>Two-Gene Comparison</button>
-          <span id="status" class="muted">Loading task manifest...</span>
-        </div>
-      </section>
 
-      <div class="stats">
-        <div class="stat"><div class="k">Selected batch</div><div id="sBatch" class="v">-</div></div>
-        <div class="stat"><div class="k">Gene A</div><div id="sGeneA" class="v">-</div></div>
-        <div class="stat"><div class="k">A AUC score</div><div id="sScoreA" class="v">-</div></div>
-        <div class="stat"><div class="k">A labels</div><div id="sTagsA" class="v">-</div></div>
-        <div class="stat"><div class="k">A median rank</div><div id="sMedianA" class="v">-</div></div>
-        <div class="stat"><div class="k">Gene B</div><div id="sGeneB" class="v">-</div></div>
-        <div class="stat"><div class="k">B AUC score</div><div id="sScoreB" class="v">-</div></div>
-        <div class="stat"><div class="k">Delta AUC B-A</div><div id="sDelta" class="v">-</div></div>
-      </div>
-
-      <section class="insight-grid">
-        <div>
-          <h2>Selected Gene Insight</h2>
-          <div id="tagPanel" class="annotation-panel"></div>
-        </div>
-        <div>
-          <h2>Study Boundary</h2>
-          <div class="annotation-panel">
-            <h3>RNA signal is not the whole biology</h3>
-            <p class="annotation-summary">A missing or low-ranked gene may still be important through mutation, copy-number alteration, protein activity, pathway context, treatment response, or another cohort. This page only summarizes how strongly the gene appeared in this task's RNA-expression ranking experiment.</p>
+        <div class="stage">
+          <img src="assets/eacr2026/figure2_stability.png" alt="Figure 2 showing Top100 stability, retained performance and prior-gene recovery heatmap.">
+          <div class="metric-strip" aria-label="Key study numbers">
+            <div class="metric"><strong>0.57</strong><span>mean best Top100 Jaccard</span></div>
+            <div class="metric"><strong>0.24</strong><span>mean full-space Top100 Jaccard</span></div>
+            <div class="metric"><strong>6/7</strong><span>tasks within 0.005 of full Top2000</span></div>
+            <div class="metric"><strong>Top30</strong><span>panels included in downloads</span></div>
           </div>
         </div>
-      </section>
+      </div>
+    </header>
 
-      <div class="plot-grid">
-        <div>
-          <h2 class="title-row">Q1-Q4 Distribution <button class="info-dot" data-help-title="Q1-Q4 rank bins" data-help-body="For each of the 100 reruns, the selected gene receives a rank within the Top2000 panel. Q1 means ranks 1-500, Q2 is 501-1000, Q3 is 1001-1500, and Q4 is 1501-2000. More Q1 mass means the gene repeatedly lands near the top.">i</button></h2>
-          <div id="quartilePlot" class="plot"></div>
+    <section class="quote" aria-label="Why this matters">
+      <div class="wrap">
+        <p>Human time is more expensive than machine time.</p>
+        <span>I would rather run 100 extra repeats than spend months validating a split-seed accident.</span>
+      </div>
+    </section>
+
+    <section id="evidence">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Three things to trust.</h2>
+          <p class="short">No grand biomarker claim. Just leakage control, repeated competition and external checks.</p>
         </div>
-        <div>
-          <h2 class="title-row">Rank CDF <button class="info-dot" data-help-title="Rank CDF" data-help-body="The CDF shows the fraction of 100 reruns where a gene ranked at or above each threshold. A curve that rises early means the gene repeatedly appears near the top. The final point intentionally follows the previous value so rank-2000 fallback values do not create a misleading terminal jump.">i</button></h2>
-          <div id="cdfPlot" class="plot"></div>
+
+        <div class="figure-flow">
+          <article class="figure-row">
+            <div class="figure-copy">
+              <p class="kicker">01</p>
+              <h3>Keep selection inside the fold.</h3>
+              <p>Every ranking step happens after the split. The held-out samples do not vote for the genes.</p>
+            </div>
+            <a class="figure-frame" href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">
+              <img src="assets/eacr2026/figure1_workflow.png" alt="Leakage-aware random-subspace XGBoost workflow.">
+            </a>
+          </article>
+
+          <article class="figure-row reverse">
+            <div class="figure-copy">
+              <p class="kicker">02</p>
+              <h3>Stability can improve without buying accuracy.</h3>
+              <p>Small-batch or consensus Top100 lists are more reproducible while internal CV5 performance is retained.</p>
+            </div>
+            <a class="figure-frame" href="downloads/eacr2026/figure2_stability.pdf">
+              <img src="assets/eacr2026/figure2_stability.png" alt="Stability and performance figure with recovery heatmap.">
+            </a>
+          </article>
+
+          <article class="figure-row">
+            <div class="figure-copy">
+              <p class="kicker">03</p>
+              <h3>Baselines keep the claim honest.</h3>
+              <p>XGBoost, regression and elastic net all see task signal; METABRIC transfer is used as a constraint, not a victory lap.</p>
+            </div>
+            <a class="figure-frame" href="downloads/eacr2026/figure3_validation_and_baselines.pdf">
+              <img src="assets/eacr2026/figure3_validation.png" alt="Baseline and METABRIC validation figure.">
+            </a>
+          </article>
         </div>
       </div>
+    </section>
 
-      <h2 class="title-row">Rank Distribution <button class="info-dot" data-help-title="Rank distribution" data-help-body="Each dot is one random rerun. Lower rank is stronger. A compact band near the top suggests a stable RNA-level signal; scattered or low dots suggest weaker or less consistent ranking behavior.">i</button></h2>
-      <div id="rankPlot" class="plot"></div>
-      <div class="tip">Each dot is one random rerun. Lower rank is stronger. Zero-gain fallback ranks are kept visible in the dot plot but do not create a terminal jump in the CDF.</div>
-
-      <h2>Per-Test Table</h2>
-      <div class="row">
-        <div class="field-wrap" style="max-width: 260px;">
-          <label for="quartileFilter">Q filter</label>
-          <select id="quartileFilter">
-            <option value="all">All rows</option>
-            <option value="Q1">Q1 only</option>
-            <option value="Q2">Q2 only</option>
-            <option value="Q3">Q3 only</option>
-            <option value="Q4">Q4 only</option>
-          </select>
+    <section id="prognosis" class="prognosis">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Prognosis stays exploratory.</h2>
+          <p class="short">Useful for the website and discussion. Too provisional to carry the main poster alone.</p>
+        </div>
+        <div class="prognosis-grid">
+          <a class="figure-frame" href="downloads/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.pdf">
+            <img src="assets/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.png" alt="Internal TCGA exploratory prognosis C-index comparison with regression and elastic net baselines.">
+          </a>
+          <div class="stack">
+            <a class="figure-frame" href="downloads/eacr2026/prognosis_latest_external_batch_heatmap.pdf">
+              <img src="assets/eacr2026/prognosis_latest_external_batch_heatmap.png" alt="External prognosis C-index heatmap across batch sizes.">
+            </a>
+            <a class="figure-frame" href="downloads/eacr2026/prognosis_latest_external_top_gain_genes.pdf">
+              <img src="assets/eacr2026/prognosis_latest_external_top_gain_genes.png" alt="Top external prognosis model gain genes.">
+            </a>
+          </div>
         </div>
       </div>
-      <div class="leaderboard-wrap">
-        <div id="detailHead" class="leaderboard-head">Query a gene to inspect each test row.</div>
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>Gene</th><th>Test</th><th>Rank</th><th>Q</th><th>Rank score</th><th>Gain</th><th>Split seed</th><th>Model seed</th></tr></thead>
-            <tbody id="detailBody"></tbody>
-          </table>
+    </section>
+
+    <section id="downloads">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Files, quietly.</h2>
+          <p class="short">Poster, PDF draft, source tables and Top30 panels.</p>
+        </div>
+        <div class="download-grid">
+          <a class="download" href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">
+            <strong>Poster PPTX</strong>
+            <span>A0 landscape, current figure set</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/paper_draft_en.pdf">
+            <strong>Draft PDF</strong>
+            <span>English manuscript-style notes</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/classification_stability_selected_top30_gene_panels.xlsx">
+            <strong>Classification Top30</strong>
+            <span>Selected panels by task</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/prognosis_latest_external_top30_gene_panels.xlsx">
+            <strong>Prognosis Top30</strong>
+            <span>Latest exploratory panels</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/figure2a_top100_stability_and_cv5_performance.csv">
+            <strong>Figure 2A data</strong>
+            <span>Top100 stability and CV5 performance</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/figure2c_prior_union_recovery_heatmap.csv">
+            <strong>Figure 2C data</strong>
+            <span>Prior-gene recovery heatmap</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/figure3b_metabric_external_validation_summary.csv">
+            <strong>METABRIC data</strong>
+            <span>External classification summary</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.csv">
+            <strong>Prognosis data</strong>
+            <span>Internal C-index baselines</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/eacr2026_ai_background_editable_text_template.pptx">
+            <strong>Design PPT</strong>
+            <span>AI background with editable text boxes</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/poster_ai_blank_background_template.png">
+            <strong>Blank background</strong>
+            <span>A0-style poster background PNG</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/eacr2026_poster_copy_blocks.md">
+            <strong>Copy blocks</strong>
+            <span>Poster text for PowerPoint</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/eacr2026_imrd_medical_poster_with_figures.pptx">
+            <strong>IMRD poster PPT</strong>
+            <span>Medical-style layout with figures</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/eacr2026_imrd_text_placement_guide.md">
+            <strong>Text placement</strong>
+            <span>Exact copy, positions and font sizes</span>
+          </a>
         </div>
       </div>
-    </main>
-  </div>
-  <div id="infoPopover" class="popover" role="dialog" aria-hidden="true"></div>
+    </section>
+  </main>
 
-  <script>
-    const Q_COLORS = { Q1: "#be185d", Q2: "#0f766e", Q3: "#d97706", Q4: "#64748b" };
-    const MISSING_NOTE = "This gene is not in the selected task's Top2000 RNA-level candidate panel. That does not mean the gene lacks biological or clinical value; it may be important through mutation, protein activity, treatment response, pathway context, or another dataset.";
-    let manifest = [];
-    let currentTask = null;
-    let matrixRows = [];
-    let summaryRows = [];
-    let longRows = [];
-    let summaryMap = new Map();
-    let matrixMap = new Map();
-    let annotations = {};
-    let activePopoverGene = null;
-
-    const taskSelect = document.getElementById("taskSelect");
-    const geneInputA = document.getElementById("geneInputA");
-    const geneInputB = document.getElementById("geneInputB");
-    const searchBtn = document.getElementById("searchBtn");
-    const compareBtn = document.getElementById("compareBtn");
-    const statusEl = document.getElementById("status");
-    const geneList = document.getElementById("geneList");
-    const hintA = document.getElementById("hintA");
-    const hintB = document.getElementById("hintB");
-    const detailHead = document.getElementById("detailHead");
-    const detailBody = document.getElementById("detailBody");
-    const quartileFilter = document.getElementById("quartileFilter");
-    const lbHead = document.getElementById("lbHead");
-    const lbBody = document.getElementById("lbBody");
-    const tagPanel = document.getElementById("tagPanel");
-    const infoPopover = document.getElementById("infoPopover");
-
-    function setStatus(msg, ok = true) { statusEl.textContent = msg; statusEl.className = ok ? "ok" : "err"; }
-    function upper(v) { return String(v || "").trim().toUpperCase(); }
-    function esc(v) {
-      return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    }
-    async function loadCsv(path) {
-      const resp = await fetch(path, { cache: "no-store" });
-      if (!resp.ok) throw new Error(path + " HTTP " + resp.status);
-      const parsed = Papa.parse(await resp.text(), { header: true, skipEmptyLines: true });
-      if (parsed.errors.length) throw new Error(parsed.errors[0].message);
-      return parsed.data;
-    }
-    function fmt(value, digits = 3) {
-      const n = Number(value);
-      return Number.isFinite(n) ? n.toFixed(digits) : "-";
-    }
-    function rankCols() {
-      return matrixRows.length ? Object.keys(matrixRows[0]).filter(k => k.startsWith("test_")) : [];
-    }
-    function resolveGene(q) { return summaryMap.get(upper(q)) || null; }
-    function matrixFor(gene) { return matrixMap.get(upper(gene)) || null; }
-    function annotationFor(gene) { return annotations[upper(gene)] || {}; }
-    function allTags(gene) {
-      const ann = annotationFor(gene);
-      return [...(ann.function_tags || []), ...(ann.supplemental_tags || [])];
-    }
-    function tagClass(gene, tag) {
-      const ann = annotationFor(gene);
-      return ann.tag_classes && ann.tag_classes[tag] ? ann.tag_classes[tag] : "default";
-    }
-    function tagHtml(gene, max = 4) {
-      const tags = allTags(gene).slice(0, max);
-      if (!tags.length) return '<span class="tag default">Awaiting annotation</span>';
-      return tags.map(t => `<span class="tag ${esc(tagClass(gene, t))}">${esc(t)}</span>`).join("");
-    }
-    function geneInfoHtml(gene) {
-      return `<span class="gene-with-info"><strong>${esc(gene)}</strong><button class="info-dot" data-gene="${esc(gene)}" aria-label="Show ${esc(gene)} annotation">i</button></span>`;
-    }
-    function annotationHtml(gene) {
-      const ann = annotationFor(gene);
-      const tags = tagHtml(gene, 8);
-      const name = ann.name ? `<div class="muted">${esc(ann.name)}</div>` : '<div class="muted">Awaiting curated name</div>';
-      const type = ann.gene_type ? `<div class="popover-source">Type: ${esc(ann.gene_type)}</div>` : "";
-      const summary = ann.summary_50w ? esc(ann.summary_50w) : "Awaiting annotation. This candidate can still be explored through its rank behavior and task context while a curated gene summary is added.";
-      const source = ann.source ? esc(ann.source) : "local fallback";
-      return `<div class="popover-title">${esc(gene)}</div>${name}<div style="margin-top:8px;" class="tag-list">${tags}</div><div style="margin-top:10px;">${summary}</div>${type}<div class="popover-source">Annotation source: ${source}</div>`;
-    }
-    function helpHtml(anchor) {
-      return `<div class="popover-title">${esc(anchor.dataset.helpTitle || "How to read this")}</div><div>${esc(anchor.dataset.helpBody || "")}</div>`;
-    }
-    function showPopover(anchor) {
-      const key = anchor.dataset.gene || anchor.dataset.helpTitle || "";
-      activePopoverGene = key;
-      infoPopover.innerHTML = anchor.dataset.gene ? annotationHtml(anchor.dataset.gene) : helpHtml(anchor);
-      infoPopover.classList.add("visible");
-      infoPopover.setAttribute("aria-hidden", "false");
-      const rect = anchor.getBoundingClientRect();
-      const top = Math.min(window.innerHeight - infoPopover.offsetHeight - 10, rect.bottom + 8);
-      const left = Math.min(window.innerWidth - infoPopover.offsetWidth - 10, rect.left);
-      infoPopover.style.top = `${Math.max(10, top)}px`;
-      infoPopover.style.left = `${Math.max(10, left)}px`;
-    }
-    function hidePopover() {
-      activePopoverGene = null;
-      infoPopover.classList.remove("visible");
-      infoPopover.setAttribute("aria-hidden", "true");
-    }
-    function qCounts(row) {
-      return {
-        Q1: Number(row.q1_count || 0),
-        Q2: Number(row.q2_count || 0),
-        Q3: Number(row.q3_count || 0),
-        Q4: Number(row.q4_count || 0),
-      };
-    }
-    function renderHints(input, box) {
-      box.innerHTML = "";
-      const q = upper(input.value);
-      if (!q) return;
-      const exact = resolveGene(q);
-      const candidates = exact ? [exact] : summaryRows.filter(r => upper(r.gene).includes(q)).slice(0, 8);
-      if (!candidates.length) {
-        box.innerHTML = '<span class="chip">Explore candidate outside this Top2000</span>';
-        return;
-      }
-      for (const r of candidates) {
-        const chip = document.createElement("span");
-        chip.className = "chip";
-        const tags = allTags(r.gene).slice(0, 2).join(", ");
-        chip.textContent = `${r.gene} | ${tags || "Awaiting annotation"} | AUC=${fmt(r.auc_score)}`;
-        chip.onclick = () => { input.value = r.gene; renderHints(input, box); };
-        box.appendChild(chip);
-      }
-    }
-    function renderTagPanel(a, b = null) {
-      const rows = b ? [a, b] : [a];
-      tagPanel.innerHTML = rows.map(r => {
-        const ann = annotationFor(r.gene);
-        const name = ann.name ? `<div class="muted">${esc(ann.name)}</div>` : '<div class="muted">Awaiting curated name</div>';
-        const summary = ann.summary_50w ? esc(ann.summary_50w) : "Awaiting annotation. Use the rank plots to explore this candidate while a curated summary is added.";
-        return `<div style="margin-bottom:18px;">
-          <h3>${geneInfoHtml(r.gene)}</h3>
-          ${name}
-          <div class="tag-list" style="margin-top:10px;">${tagHtml(r.gene, 8)}</div>
-          <div class="annotation-summary">${summary}</div>
-        </div>`;
-      }).join("");
-    }
-    function renderMissingGene(rawGene) {
-      const gene = upper(rawGene);
-      updateStats(null, null, gene);
-      tagPanel.innerHTML = `<h3>${esc(gene || "Unknown gene")}</h3><div class="tag-list"><span class="tag default">Explore candidate</span></div><p class="fallback-note">${MISSING_NOTE}</p>`;
-      Plotly.purge("quartilePlot");
-      Plotly.purge("cdfPlot");
-      Plotly.purge("rankPlot");
-      detailHead.textContent = `${gene || "Gene"} not found in current task Top2000`;
-      detailBody.innerHTML = `<tr><td colspan="8">${esc(MISSING_NOTE)}</td></tr>`;
-      setStatus(`${gene || "Gene"} is outside this task Top2000 panel`, false);
-    }
-    function updateStats(a, b = null, missingGene = "") {
-      const task = manifest.find(x => x.task === currentTask);
-      document.getElementById("sBatch").textContent = task ? task.selected_batch_size : "-";
-      document.getElementById("sGeneA").textContent = a ? a.gene : (missingGene || "-");
-      document.getElementById("sScoreA").textContent = a ? fmt(a.auc_score) : "-";
-      document.getElementById("sTagsA").innerHTML = a ? tagHtml(a.gene, 3) : '<span class="tag default">Explore candidate</span>';
-      document.getElementById("sMedianA").textContent = a ? fmt(a.median_rank, 1) : "-";
-      document.getElementById("sGeneB").textContent = b ? b.gene : "-";
-      document.getElementById("sScoreB").textContent = b ? fmt(b.auc_score) : "-";
-      document.getElementById("sDelta").textContent = a && b ? fmt(Number(b.auc_score) - Number(a.auc_score)) : "-";
-    }
-    function rankTrace(summaryRow, color) {
-      const mat = matrixFor(summaryRow.gene);
-      const x = [], y = [];
-      for (const col of rankCols()) {
-        const n = Number(mat[col]);
-        if (Number.isFinite(n)) { x.push(col); y.push(n); }
-      }
-      return { type: "scatter", mode: "markers", name: summaryRow.gene, x, y, marker: { color, size: 8, opacity: 0.82 }, hovertemplate: "%{x}<br>rank %{y}<extra>%{fullData.name}</extra>" };
-    }
-    function renderRankPlot(a, b = null) {
-      const traces = [rankTrace(a, "#be185d")];
-      if (b) traces.push(rankTrace(b, "#0f766e"));
-      Plotly.newPlot("rankPlot", traces, {
-        margin: { l: 58, r: 18, t: 18, b: 70 },
-        yaxis: { title: "Rank", autorange: "reversed", range: [2050, 0] },
-        xaxis: { tickangle: -45, automargin: true, showticklabels: false },
-        legend: { orientation: "h", y: 1.12 },
-        paper_bgcolor: "white", plot_bgcolor: "white"
-      }, { responsive: true, displayModeBar: false });
-    }
-    function renderQuartilePlot(a, b = null) {
-      const rows = b ? [a, b] : [a];
-      const traces = ["Q1", "Q2", "Q3", "Q4"].map(q => ({
-        type: "bar", name: q, x: rows.map(r => r.gene), y: rows.map(r => qCounts(r)[q] / 100), marker: { color: Q_COLORS[q] }
-      }));
-      Plotly.newPlot("quartilePlot", traces, {
-        barmode: "stack",
-        margin: { l: 48, r: 18, t: 18, b: 42 },
-        yaxis: { title: "Fraction of 100 reruns", range: [0, 1], tickformat: ".0%" },
-        legend: { orientation: "h", y: 1.16 },
-        paper_bgcolor: "white", plot_bgcolor: "white"
-      }, { responsive: true, displayModeBar: false });
-    }
-    function cdfTrace(summaryRow, color) {
-      const mat = matrixFor(summaryRow.gene);
-      const ranks = rankCols().map(c => Number(mat[c])).filter(Number.isFinite).sort((a, b) => a - b);
-      const x = [], y = [];
-      for (let t = 100; t <= 2000; t += 100) {
-        x.push(t);
-        y.push(ranks.filter(r => r <= t).length / 100);
-      }
-      if (y.length >= 2) y[y.length - 1] = y[y.length - 2];
-      return { type: "scatter", mode: "lines+markers", name: summaryRow.gene, x, y, line: { color, width: 2 }, hovertemplate: "rank <= %{x}<br>CDF %{y:.2f}<extra>%{fullData.name}</extra>" };
-    }
-    function renderCdfPlot(a, b = null) {
-      const traces = [cdfTrace(a, "#be185d")];
-      if (b) traces.push(cdfTrace(b, "#0f766e"));
-      Plotly.newPlot("cdfPlot", traces, {
-        margin: { l: 48, r: 18, t: 18, b: 42 },
-        yaxis: { title: "Fraction of 100 reruns", range: [0, 1] },
-        xaxis: { title: "Rank threshold" },
-        legend: { orientation: "h", y: 1.16 },
-        paper_bgcolor: "white", plot_bgcolor: "white"
-      }, { responsive: true, displayModeBar: false });
-    }
-    function renderDetail(gene) {
-      const filter = quartileFilter.value;
-      let rows = longRows.filter(r => upper(r.gene) === upper(gene));
-      if (filter !== "all") rows = rows.filter(r => r.q_label === filter);
-      detailHead.textContent = `${gene} per-test rows | shown=${rows.length} | filter=${filter}`;
-      detailBody.innerHTML = "";
-      const frag = document.createDocumentFragment();
-      rows.slice(0, 500).forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${r.gene}</td><td>${r.test_id}</td><td>${r.rank}</td><td>${r.q_label}</td><td>${fmt(r.rank_score, 3)}</td><td>${fmt(r.gain_importance, 5)}</td><td>${r.split_seed}</td><td>${r.model_seed}</td>`;
-        frag.appendChild(tr);
-      });
-      detailBody.appendChild(frag);
-    }
-    function renderLeaderboard() {
-      lbHead.textContent = `${currentTask} | top 100 of ${summaryRows.length} panel genes`;
-      lbBody.innerHTML = "";
-      const frag = document.createDocumentFragment();
-      summaryRows.slice(0, 100).forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${r.leaderboard_rank}</td><td>${geneInfoHtml(r.gene)}</td><td><div class="tag-list">${tagHtml(r.gene)}</div></td><td>${r.prior_gene_set || "-"}</td><td>${fmt(r.auc_score)}</td><td>${fmt(r.median_rank, 1)}</td>`;
-        tr.onclick = (ev) => {
-          if (ev.target && ev.target.classList.contains("info-dot")) return;
-          geneInputA.value = r.gene;
-          querySingle();
-          document.querySelector(".query-panel").scrollIntoView({ behavior: "smooth", block: "start" });
-        };
-        frag.appendChild(tr);
-      });
-      lbBody.appendChild(frag);
-    }
-    function querySingle() {
-      const a = resolveGene(geneInputA.value);
-      if (!a) return renderMissingGene(geneInputA.value);
-      geneInputA.value = a.gene;
-      updateStats(a);
-      renderTagPanel(a);
-      renderQuartilePlot(a);
-      renderCdfPlot(a);
-      renderRankPlot(a);
-      renderDetail(a.gene);
-      setStatus(`Loaded ${currentTask}: ${a.gene}`, true);
-    }
-    function queryCompare() {
-      const a = resolveGene(geneInputA.value);
-      const b = resolveGene(geneInputB.value);
-      if (!a) return renderMissingGene(geneInputA.value);
-      if (!b) {
-        renderMissingGene(geneInputB.value);
-        geneInputA.value = a.gene;
-        return setStatus("Gene B is outside this task Top2000 panel.", false);
-      }
-      geneInputA.value = a.gene; geneInputB.value = b.gene;
-      updateStats(a, b);
-      renderTagPanel(a, b);
-      renderQuartilePlot(a, b);
-      renderCdfPlot(a, b);
-      renderRankPlot(a, b);
-      renderDetail(a.gene);
-      setStatus(`Comparing ${a.gene} and ${b.gene}`, true);
-    }
-    async function loadTask(task, preferredGene = null) {
-      currentTask = task;
-      const meta = manifest.find(r => r.task === task);
-      setStatus("Loading " + task + "...", true);
-      matrixRows = await loadCsv(meta.matrix_csv);
-      summaryRows = await loadCsv(meta.summary_csv);
-      longRows = await loadCsv(meta.long_csv);
-      summaryMap = new Map(summaryRows.map(r => [upper(r.gene), r]));
-      matrixMap = new Map(matrixRows.map(r => [upper(r.gene), r]));
-      geneList.innerHTML = "";
-      const frag = document.createDocumentFragment();
-      summaryRows.map(r => r.gene).sort().forEach(g => { const opt = document.createElement("option"); opt.value = g; frag.appendChild(opt); });
-      geneList.appendChild(frag);
-      renderLeaderboard();
-      searchBtn.disabled = false; compareBtn.disabled = false;
-      const preferred = [preferredGene, "ERBB2", "ESR1", "GATA3", "PGR", "FOXA1"].filter(Boolean).find(g => summaryMap.has(upper(g)));
-      geneInputA.value = preferred || summaryRows[0].gene;
-      geneInputB.value = "";
-      querySingle();
-    }
-    async function taskHasGene(task, gene) {
-      const meta = manifest.find(r => r.task === task);
-      if (!meta) return false;
-      const rows = await loadCsv(meta.summary_csv);
-      return rows.some(r => upper(r.gene) === upper(gene));
-    }
-    async function init() {
-      try {
-        try {
-          const annResp = await fetch("gene_function_annotations.json", { cache: "no-store" });
-          if (annResp.ok) annotations = await annResp.json();
-        } catch (_e) {
-          annotations = {};
-        }
-        manifest = await loadCsv("task_manifest.csv");
-        taskSelect.innerHTML = "";
-        manifest.forEach(r => {
-          const opt = document.createElement("option");
-          opt.value = r.task;
-          opt.textContent = `${r.task} | batch ${r.selected_batch_size}`;
-          taskSelect.appendChild(opt);
-        });
-        let initialTask = manifest.some(r => r.task === "her2_status") ? "her2_status" : manifest[0].task;
-        if (!(await taskHasGene(initialTask, "ERBB2"))) {
-          for (const row of manifest) {
-            if (await taskHasGene(row.task, "ERBB2")) { initialTask = row.task; break; }
-          }
-        }
-        taskSelect.value = initialTask;
-        await loadTask(initialTask, "ERBB2");
-      } catch (e) {
-        setStatus("Load failed: " + e.message, false);
-      }
-    }
-    taskSelect.addEventListener("change", () => loadTask(taskSelect.value, "ERBB2"));
-    searchBtn.onclick = querySingle;
-    compareBtn.onclick = queryCompare;
-    geneInputA.addEventListener("input", () => renderHints(geneInputA, hintA));
-    geneInputB.addEventListener("input", () => renderHints(geneInputB, hintB));
-    geneInputA.addEventListener("keydown", ev => { if (ev.key === "Enter") querySingle(); });
-    geneInputB.addEventListener("keydown", ev => { if (ev.key === "Enter") queryCompare(); });
-    quartileFilter.addEventListener("change", () => { const a = resolveGene(geneInputA.value); if (a) renderDetail(a.gene); });
-    document.addEventListener("mouseover", ev => {
-      const dot = ev.target.closest && ev.target.closest(".info-dot");
-      if (dot) showPopover(dot);
-    });
-    document.addEventListener("focusin", ev => {
-      const dot = ev.target.closest && ev.target.closest(".info-dot");
-      if (dot) showPopover(dot);
-    });
-    document.addEventListener("mouseout", ev => {
-      if (ev.target.closest && ev.target.closest(".info-dot") && !infoPopover.matches(":hover")) hidePopover();
-    });
-    document.addEventListener("click", ev => {
-      const dot = ev.target.closest && ev.target.closest(".info-dot");
-      if (dot) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        const key = dot.dataset.gene || dot.dataset.helpTitle || "";
-        activePopoverGene === key ? hidePopover() : showPopover(dot);
-      } else if (!ev.target.closest || !ev.target.closest("#infoPopover")) {
-        hidePopover();
-      }
-    });
-    init();
-  </script>
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>Remote companion for EACR 2026. Author cannot attend in person.</span>
+      <span>Contact: Tianqr18@gmail.com</span>
+    </div>
+  </footer>
 </body>
 </html>
