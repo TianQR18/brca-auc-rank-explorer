@@ -1,0 +1,13 @@
+endpoint,endpoint_label,model,cohort,c_index,batch_size,n_genes,n_samples,n_events,scaling_mode,metabric_endpoint,interpretation
+OS,OS,All-gene XGBoost,TCGA internal CV5,0.6453829032172362,all genes,20530,,,,,
+OS,OS,Repeated Top30 panel,TCGA internal CV5,0.7118685933908242,1000,30,1077.0,151.0,,,
+OS,OS,Repeated Top30 panel,METABRIC external,0.5576296968403074,500,30,1979.0,1143.0,tcga_scaler,OS,direct OS-to-OS external validation
+DSS,DSS (OS proxy),All-gene XGBoost,TCGA internal CV5,0.7036071590118633,all genes,20530,,,,,
+DSS,DSS (OS proxy),Repeated Top30 panel,TCGA internal CV5,0.7502659422487725,1000,30,1058.0,83.0,,,
+DSS,DSS (OS proxy),Repeated Top30 panel,METABRIC external,0.5642950440032262,250,30,1979.0,1143.0,metabric_cohort_zscore,OS,proxy only: METABRIC has OS but no DSS
+PFI,PFI (RFS proxy),All-gene XGBoost,TCGA internal CV5,0.6505006684822232,all genes,20530,,,,,
+PFI,PFI (RFS proxy),Repeated Top30 panel,TCGA internal CV5,0.7024521328742324,250,30,1077.0,145.0,,,
+PFI,PFI (RFS proxy),Repeated Top30 panel,METABRIC external,0.5597360601692878,500,30,1975.0,800.0,metabric_cohort_zscore,RFS,proxy: METABRIC RFS used for progression/recurrence-related endpoint
+DFI,DFI (RFS proxy),All-gene XGBoost,TCGA internal CV5,0.5883376299106636,all genes,20530,,,,,
+DFI,DFI (RFS proxy),Repeated Top30 panel,TCGA internal CV5,0.6883156790008744,1000,30,935.0,84.0,,,
+DFI,DFI (RFS proxy),Repeated Top30 panel,METABRIC external,0.5742939714636422,250,30,1975.0,800.0,metabric_cohort_zscore,RFS,proxy: METABRIC RFS used for disease-free/recurrence-related endpoint

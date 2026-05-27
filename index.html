@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Top genes are not a single answer | EACR 2026</title>
+  <meta name="description" content="Remote companion page for an EACR 2026 poster on leakage-aware repeated XGBoost screening and biomarker stability in TCGA-BRCA.">
+  <meta property="og:title" content="Top genes are not a single answer">
+  <meta property="og:description" content="Leakage-aware repeated XGBoost screening for more stable TCGA-BRCA top-gene discovery.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/eacr2026/figure2_stability.png">
+  <style>
+    :root {
+      --ink: #1d1d1f;
+      --muted: #6e7783;
+      --line: #d8dee6;
+      --soft: #f5f7fa;
+      --blue: #315f8a;
+      --blue-2: #527ea5;
+      --red: #c44e4a;
+      --white: #ffffff;
+      --shadow: 0 28px 70px rgba(29, 29, 31, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(216, 222, 230, 0.76);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav-inner {
+      width: min(1180px, calc(100% - 36px));
+      min-height: 54px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .nav-links a:hover {
+      color: var(--blue);
+    }
+
+    .hero {
+      min-height: 92vh;
+      padding: 86px 0 48px;
+      display: grid;
+      align-items: end;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+    }
+
+    .hero-copy {
+      max-width: 880px;
+      margin-bottom: 42px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 18px;
+      font-size: clamp(48px, 7vw, 104px);
+      line-height: 0.96;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 760px;
+      margin-bottom: 28px;
+      color: #384150;
+      font-size: clamp(20px, 2.3vw, 31px);
+      line-height: 1.24;
+      font-weight: 520;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .button {
+      min-height: 42px;
+      padding: 10px 16px;
+      border: 1px solid var(--ink);
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      background: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .button.secondary {
+      color: var(--ink);
+      background: transparent;
+      border-color: var(--line);
+    }
+
+    .stage {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(216, 222, 230, 0.96);
+      border-radius: 8px;
+      background: var(--white);
+      box-shadow: var(--shadow);
+    }
+
+    .stage img {
+      aspect-ratio: 16 / 8.4;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .metric-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 1px;
+      background: var(--line);
+    }
+
+    .metric {
+      min-height: 106px;
+      padding: 20px;
+      background: var(--white);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--blue);
+      font-size: clamp(28px, 3.5vw, 46px);
+      line-height: 1;
+      font-weight: 760;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+
+    section {
+      padding: 96px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 28px;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      margin-bottom: 0;
+      font-size: clamp(34px, 4.5vw, 64px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      font-weight: 740;
+    }
+
+    .short {
+      max-width: 430px;
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    .quote {
+      padding: 110px 0;
+      color: var(--white);
+      background: #1d1d1f;
+      text-align: center;
+    }
+
+    .quote p {
+      max-width: 980px;
+      margin: 0 auto;
+      font-size: clamp(34px, 5.2vw, 76px);
+      line-height: 1.04;
+      font-weight: 740;
+      letter-spacing: 0;
+    }
+
+    .quote span {
+      display: block;
+      max-width: 620px;
+      margin: 24px auto 0;
+      color: #bcc4cf;
+      font-size: clamp(16px, 1.8vw, 22px);
+      line-height: 1.38;
+      font-weight: 520;
+    }
+
+    .figure-flow {
+      display: grid;
+      gap: 52px;
+    }
+
+    .figure-row {
+      display: grid;
+      grid-template-columns: 0.82fr 1.18fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .figure-row.reverse {
+      grid-template-columns: 1.18fr 0.82fr;
+    }
+
+    .figure-row.reverse .figure-copy {
+      order: 2;
+    }
+
+    .figure-copy {
+      max-width: 420px;
+    }
+
+    .kicker {
+      margin-bottom: 12px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    h3 {
+      margin-bottom: 12px;
+      font-size: clamp(26px, 3vw, 42px);
+      line-height: 1.05;
+      letter-spacing: 0;
+      font-weight: 730;
+    }
+
+    .figure-copy p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    .figure-frame {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      box-shadow: 0 18px 52px rgba(29, 29, 31, 0.08);
+    }
+
+    .figure-frame img {
+      aspect-ratio: 16 / 9;
+      object-fit: contain;
+      background: var(--white);
+    }
+
+    .prognosis {
+      background: var(--soft);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .prognosis-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .prognosis-grid .figure-frame:first-child img {
+      aspect-ratio: 16 / 10;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .stack img {
+      aspect-ratio: 16 / 10.2;
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .download {
+      min-height: 118px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .download:hover {
+      transform: translateY(-2px);
+      border-color: rgba(82, 126, 165, 0.65);
+      box-shadow: 0 14px 38px rgba(29, 29, 31, 0.08);
+    }
+
+    .download strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .download span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+
+    .footer {
+      padding: 34px 0 44px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 58px;
+      }
+
+      .stage img {
+        aspect-ratio: 4 / 3;
+      }
+
+      .metric-strip,
+      .download-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .section-head,
+      .figure-row,
+      .figure-row.reverse,
+      .prognosis-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: grid;
+        align-items: start;
+        gap: 14px;
+      }
+
+      .figure-row.reverse .figure-copy {
+        order: 0;
+      }
+
+      .short,
+      .figure-copy {
+        max-width: none;
+      }
+
+      section {
+        padding: 72px 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .wrap,
+      .nav-inner,
+      .footer-inner {
+        width: min(100% - 24px, 1180px);
+      }
+
+      h1 {
+        font-size: 46px;
+      }
+
+      .lead {
+        font-size: 20px;
+      }
+
+      .quote {
+        padding: 76px 0;
+      }
+
+      .metric-strip,
+      .download-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metric {
+        min-height: 92px;
+      }
+
+      .figure-frame img,
+      .prognosis-grid .figure-frame:first-child img,
+      .stack img {
+        aspect-ratio: 4 / 3;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Page navigation">
+    <div class="nav-inner">
+      <a class="brand" href="#">EACR 2026</a>
+      <div class="nav-links">
+        <a href="#evidence">Evidence</a>
+        <a href="#prognosis">Prognosis</a>
+        <a href="#downloads">Downloads</a>
+        <a href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">Poster</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="wrap">
+        <div class="hero-copy">
+          <h1>Top genes are not a single answer.</h1>
+          <p class="lead">A leakage-aware repeated XGBoost screen for more stable TCGA-BRCA gene discovery.</p>
+          <div class="actions" aria-label="Primary downloads">
+            <a class="button" href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">Download poster</a>
+            <a class="button secondary" href="downloads/eacr2026/paper_draft_en.pdf">Read draft</a>
+          </div>
+        </div>
+
+        <div class="stage">
+          <img src="assets/eacr2026/figure2_stability.png" alt="Figure 2 showing Top100 stability, retained performance and prior-gene recovery heatmap.">
+          <div class="metric-strip" aria-label="Key study numbers">
+            <div class="metric"><strong>0.57</strong><span>mean best Top100 Jaccard</span></div>
+            <div class="metric"><strong>0.24</strong><span>mean full-space Top100 Jaccard</span></div>
+            <div class="metric"><strong>6/7</strong><span>tasks within 0.005 of full Top2000</span></div>
+            <div class="metric"><strong>Top30</strong><span>panels included in downloads</span></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="quote" aria-label="Why this matters">
+      <div class="wrap">
+        <p>Human time is more expensive than machine time.</p>
+        <span>I would rather run 100 extra repeats than spend months validating a split-seed accident.</span>
+      </div>
+    </section>
+
+    <section id="evidence">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Three things to trust.</h2>
+          <p class="short">No grand biomarker claim. Just leakage control, repeated competition and external checks.</p>
+        </div>
+
+        <div class="figure-flow">
+          <article class="figure-row">
+            <div class="figure-copy">
+              <p class="kicker">01</p>
+              <h3>Keep selection inside the fold.</h3>
+              <p>Every ranking step happens after the split. The held-out samples do not vote for the genes.</p>
+            </div>
+            <a class="figure-frame" href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">
+              <img src="assets/eacr2026/figure1_workflow.png" alt="Leakage-aware random-subspace XGBoost workflow.">
+            </a>
+          </article>
+
+          <article class="figure-row reverse">
+            <div class="figure-copy">
+              <p class="kicker">02</p>
+              <h3>Stability can improve without buying accuracy.</h3>
+              <p>Small-batch or consensus Top100 lists are more reproducible while internal CV5 performance is retained.</p>
+            </div>
+            <a class="figure-frame" href="downloads/eacr2026/figure2_stability.pdf">
+              <img src="assets/eacr2026/figure2_stability.png" alt="Stability and performance figure with recovery heatmap.">
+            </a>
+          </article>
+
+          <article class="figure-row">
+            <div class="figure-copy">
+              <p class="kicker">03</p>
+              <h3>Baselines keep the claim honest.</h3>
+              <p>XGBoost, regression and elastic net all see task signal; METABRIC transfer is used as a constraint, not a victory lap.</p>
+            </div>
+            <a class="figure-frame" href="downloads/eacr2026/figure3_validation_and_baselines.pdf">
+              <img src="assets/eacr2026/figure3_validation.png" alt="Baseline and METABRIC validation figure.">
+            </a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="prognosis" class="prognosis">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Prognosis stays exploratory.</h2>
+          <p class="short">Useful for the website and discussion. Too provisional to carry the main poster alone.</p>
+        </div>
+        <div class="prognosis-grid">
+          <a class="figure-frame" href="downloads/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.pdf">
+            <img src="assets/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.png" alt="Internal TCGA exploratory prognosis C-index comparison with regression and elastic net baselines.">
+          </a>
+          <div class="stack">
+            <a class="figure-frame" href="downloads/eacr2026/prognosis_latest_external_batch_heatmap.pdf">
+              <img src="assets/eacr2026/prognosis_latest_external_batch_heatmap.png" alt="External prognosis C-index heatmap across batch sizes.">
+            </a>
+            <a class="figure-frame" href="downloads/eacr2026/prognosis_latest_external_top_gain_genes.pdf">
+              <img src="assets/eacr2026/prognosis_latest_external_top_gain_genes.png" alt="Top external prognosis model gain genes.">
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="downloads">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Files, quietly.</h2>
+          <p class="short">Poster, PDF draft, source tables and Top30 panels.</p>
+        </div>
+        <div class="download-grid">
+          <a class="download" href="downloads/eacr2026/eacr2026_brca_random_subspace_xgb_poster_A0_landscape.pptx">
+            <strong>Poster PPTX</strong>
+            <span>A0 landscape, current figure set</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/paper_draft_en.pdf">
+            <strong>Draft PDF</strong>
+            <span>English manuscript-style notes</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/classification_stability_selected_top30_gene_panels.xlsx">
+            <strong>Classification Top30</strong>
+            <span>Selected panels by task</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/prognosis_latest_external_top30_gene_panels.xlsx">
+            <strong>Prognosis Top30</strong>
+            <span>Latest exploratory panels</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/figure2a_top100_stability_and_cv5_performance.csv">
+            <strong>Figure 2A data</strong>
+            <span>Top100 stability and CV5 performance</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/figure2c_prior_union_recovery_heatmap.csv">
+            <strong>Figure 2C data</strong>
+            <span>Prior-gene recovery heatmap</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/figure3b_metabric_external_validation_summary.csv">
+            <strong>METABRIC data</strong>
+            <span>External classification summary</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/prognosis_latest_internal_regression_elasticnet_cindex.csv">
+            <strong>Prognosis data</strong>
+            <span>Internal C-index baselines</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/eacr2026_ai_background_editable_text_template.pptx">
+            <strong>Design PPT</strong>
+            <span>AI background with editable text boxes</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/poster_ai_blank_background_template.png">
+            <strong>Blank background</strong>
+            <span>A0-style poster background PNG</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/eacr2026_poster_copy_blocks.md">
+            <strong>Copy blocks</strong>
+            <span>Poster text for PowerPoint</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/eacr2026_imrd_medical_poster_with_figures.pptx">
+            <strong>IMRD poster PPT</strong>
+            <span>Medical-style layout with figures</span>
+          </a>
+          <a class="download" href="downloads/eacr2026/eacr2026_imrd_text_placement_guide.md">
+            <strong>Text placement</strong>
+            <span>Exact copy, positions and font sizes</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>Remote companion for EACR 2026. Author cannot attend in person.</span>
+      <span>Contact: Tianqr18@gmail.com</span>
+    </div>
+  </footer>
+</body>
+</html>

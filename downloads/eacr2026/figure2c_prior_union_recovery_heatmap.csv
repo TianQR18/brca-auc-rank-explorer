@@ -1,0 +1,29 @@
+task,task_label,batch_size,prior_count_delta_mean
+er_status,ER status,100,18.2
+er_status,ER status,1000,10.2
+er_status,ER status,250,18.0
+er_status,ER status,500,16.0
+her2_status,HER2 status,100,19.0
+her2_status,HER2 status,1000,8.8
+her2_status,HER2 status,250,15.8
+her2_status,HER2 status,500,13.2
+ihc_subtype,IHC subtype,100,16.6
+ihc_subtype,IHC subtype,1000,17.0
+ihc_subtype,IHC subtype,250,19.0
+ihc_subtype,IHC subtype,500,17.0
+pam50_subtype,PAM50 subtype,100,17.4
+pam50_subtype,PAM50 subtype,1000,17.8
+pam50_subtype,PAM50 subtype,250,18.6
+pam50_subtype,PAM50 subtype,500,17.4
+pam50_subtype_no_pam50_genes,PAM50 without PAM50 genes,100,0.6
+pam50_subtype_no_pam50_genes,PAM50 without PAM50 genes,1000,1.0
+pam50_subtype_no_pam50_genes,PAM50 without PAM50 genes,250,1.2
+pam50_subtype_no_pam50_genes,PAM50 without PAM50 genes,500,1.2
+tnbc_status,TNBC status,100,19.8
+tnbc_status,TNBC status,1000,14.0
+tnbc_status,TNBC status,250,18.8
+tnbc_status,TNBC status,500,16.4
+tumor_normal,Tumour normal,100,15.0
+tumor_normal,Tumour normal,1000,11.4
+tumor_normal,Tumour normal,250,18.0
+tumor_normal,Tumour normal,500,13.8
